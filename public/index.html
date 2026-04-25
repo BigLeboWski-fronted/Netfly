@@ -2703,16 +2703,47 @@ body::before{
         <button class="authTab active" id="tabLogin" type="button">Войти</button>
         <button class="authTab" id="tabRegister" type="button">Регистрация</button>
       </div>
-      <div class="authFields">
+
+      <!-- Step 1: login fields -->
+      <div id="authStepLogin" class="authFields">
         <div>
-          <label for="authUsername">Имя пользователя</label>
-          <input id="authUsername" type="text" placeholder="netflyer" maxlength="40" autocomplete="username" />
+          <label for="authEmail">Email или имя пользователя</label>
+          <input id="authEmail" type="text" placeholder="you@example.com" maxlength="80" autocomplete="username" />
         </div>
         <div>
           <label for="authPassword">Пароль</label>
           <input id="authPassword" type="password" placeholder="••••••" maxlength="72" autocomplete="current-password" />
         </div>
       </div>
+
+      <!-- Step 1: register fields -->
+      <div id="authStepRegister" class="authFields" style="display:none">
+        <div>
+          <label for="authRegEmail">Email</label>
+          <input id="authRegEmail" type="email" placeholder="you@example.com" maxlength="80" autocomplete="email" />
+        </div>
+        <div>
+          <label for="authRegUsername">Имя пользователя</label>
+          <input id="authRegUsername" type="text" placeholder="netflyer" maxlength="40" autocomplete="username" />
+        </div>
+        <div>
+          <label for="authRegPassword">Пароль</label>
+          <input id="authRegPassword" type="password" placeholder="••••••" maxlength="72" autocomplete="new-password" />
+        </div>
+      </div>
+
+      <!-- Step 2: code input (register only) -->
+      <div id="authStepCode" class="authFields" style="display:none">
+        <div style="text-align:center; color:var(--muted); font-size:13px; margin-bottom:4px">
+          Код отправлен на <b id="authCodeEmailHint" style="color:#fff"></b>
+        </div>
+        <div>
+          <label for="authCode">Код подтверждения</label>
+          <input id="authCode" type="text" placeholder="123456" maxlength="6" autocomplete="one-time-code"
+            style="text-align:center; font-size:22px; letter-spacing:8px; font-weight:900" />
+        </div>
+      </div>
+
       <button class="authSubmit" id="authSubmit" type="button">Войти</button>
       <div class="authError" id="authError"></div>
     </div>
@@ -7048,55 +7079,94 @@ if(finishToRated){
     }
 
     // Auth UI
-    let authMode = "login";
+    let authMode = "login"; // "login" | "register" | "code"
+    const _authSubmit = document.getElementById("authSubmit");
+    const _authError = document.getElementById("authError");
+
+    function authSetError(msg){ _authError.textContent = msg || ""; }
+    function authSetLoading(on){ _authSubmit.disabled = on; }
+
+    function showAuthStep(step){
+      document.getElementById("authStepLogin").style.display   = step === "login"    ? "" : "none";
+      document.getElementById("authStepRegister").style.display = step === "register" ? "" : "none";
+      document.getElementById("authStepCode").style.display    = step === "code"     ? "" : "none";
+    }
+
     document.getElementById("tabLogin").addEventListener("click", () => {
       authMode = "login";
       document.getElementById("tabLogin").classList.add("active");
       document.getElementById("tabRegister").classList.remove("active");
-      document.getElementById("authSubmit").textContent = "Войти";
-      document.getElementById("authError").textContent = "";
-      document.getElementById("authPassword").autocomplete = "current-password";
+      _authSubmit.textContent = "Войти";
+      showAuthStep("login");
+      authSetError("");
     });
+
     document.getElementById("tabRegister").addEventListener("click", () => {
       authMode = "register";
       document.getElementById("tabRegister").classList.add("active");
       document.getElementById("tabLogin").classList.remove("active");
-      document.getElementById("authSubmit").textContent = "Зарегистрироваться";
-      document.getElementById("authError").textContent = "";
-      document.getElementById("authPassword").autocomplete = "new-password";
+      _authSubmit.textContent = "Получить код";
+      showAuthStep("register");
+      authSetError("");
     });
 
-    document.getElementById("authSubmit").addEventListener("click", async () => {
-      const username = document.getElementById("authUsername").value.trim();
-      const password = document.getElementById("authPassword").value;
-      const errEl = document.getElementById("authError");
-      const btn = document.getElementById("authSubmit");
+    _authSubmit.addEventListener("click", async () => {
+      authSetError("");
+      authSetLoading(true);
+      const origText = _authSubmit.textContent;
+      _authSubmit.textContent = "...";
 
-      errEl.textContent = "";
-      btn.disabled = true;
-      btn.textContent = "...";
+      try {
+        if (authMode === "login") {
+          const email = document.getElementById("authEmail").value.trim();
+          const password = document.getElementById("authPassword").value;
+          const data = await apiFetch("/api/login", {
+            method: "POST", body: JSON.stringify({ email, password })
+          });
+          showApp(data.username);
+          await loadFromServer();
+          renderEverything();
 
-      try{
-        const data = await apiFetch("/api/" + authMode, {
-          method: "POST",
-          body: JSON.stringify({ username, password }),
-        });
-        showApp(data.username);
-        await loadFromServer();
-        renderEverything();
-      }catch(e){
-        errEl.textContent = e.message;
-      }finally{
-        btn.disabled = false;
-        btn.textContent = authMode === "login" ? "Войти" : "Зарегистрироваться";
+        } else if (authMode === "register") {
+          const email    = document.getElementById("authRegEmail").value.trim();
+          const username = document.getElementById("authRegUsername").value.trim();
+          const password = document.getElementById("authRegPassword").value;
+          await apiFetch("/api/send-code", {
+            method: "POST", body: JSON.stringify({ email, username, password })
+          });
+          // move to code step
+          authMode = "code";
+          document.getElementById("authCodeEmailHint").textContent = email;
+          showAuthStep("code");
+          _authSubmit.textContent = "Подтвердить";
+          document.getElementById("authCode").focus();
+
+        } else if (authMode === "code") {
+          const email    = document.getElementById("authRegEmail").value.trim();
+          const username = document.getElementById("authRegUsername").value.trim();
+          const password = document.getElementById("authRegPassword").value;
+          const code     = document.getElementById("authCode").value.trim();
+          const data = await apiFetch("/api/verify-code", {
+            method: "POST", body: JSON.stringify({ email, username, password, code })
+          });
+          showApp(data.username);
+          await loadFromServer();
+          renderEverything();
+        }
+      } catch(e) {
+        authSetError(e.message);
+        _authSubmit.textContent = origText;
+      } finally {
+        authSetLoading(false);
+        if(authMode !== "code") _authSubmit.textContent = origText;
+        else if(!_authError.textContent) {} // keep "Подтвердить"
       }
     });
 
-    // Enter key in auth form
-    ["authUsername","authPassword"].forEach(id => {
-      document.getElementById(id).addEventListener("keydown", (e) => {
-        if(e.key === "Enter") document.getElementById("authSubmit").click();
-      });
+    // Enter key
+    ["authEmail","authPassword","authRegEmail","authRegUsername","authRegPassword","authCode"].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.addEventListener("keydown", (e) => { if(e.key === "Enter") _authSubmit.click(); });
     });
 
     document.getElementById("logoutBtn").addEventListener("click", async () => {

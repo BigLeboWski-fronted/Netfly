@@ -3,6 +3,7 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const cookieParser = require("cookie-parser");
 const path = require("path");
+const { Resend } = require("resend");
 const { pool, migrate } = require("./db");
 const { signToken, requireAuth } = require("./auth");
 
@@ -11,49 +12,115 @@ app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "../public")));
 
+const resend = new Resend(process.env.RESEND_API_KEY);
+const FROM_EMAIL = process.env.FROM_EMAIL || "noreply@yourdomain.com";
+
 const COOKIE_OPTS = {
   httpOnly: true,
   sameSite: "lax",
   secure: process.env.NODE_ENV === "production",
-  maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+  maxAge: 30 * 24 * 60 * 60 * 1000,
 };
 
 app.get("/health", (req, res) => res.json({ ok: true }));
 
-// ── Auth ──────────────────────────────────────────────────────────────────────
+// ── Email verification ────────────────────────────────────────────────────────
 
-app.post("/api/register", async (req, res) => {
-  const { username, password } = req.body;
-  if (!username || !password) return res.status(400).json({ error: "Заполни все поля" });
-  if (username.length < 3) return res.status(400).json({ error: "Имя минимум 3 символа" });
-  if (password.length < 6) return res.status(400).json({ error: "Пароль минимум 6 символов" });
+app.post("/api/send-code", async (req, res) => {
+  const { email, username, password } = req.body;
+  if (!email || !username || !password)
+    return res.status(400).json({ error: "Заполни все поля" });
+  if (username.length < 3)
+    return res.status(400).json({ error: "Имя минимум 3 символа" });
+  if (password.length < 6)
+    return res.status(400).json({ error: "Пароль минимум 6 символов" });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    return res.status(400).json({ error: "Некорректный email" });
 
   try {
-    const hash = await bcrypt.hash(password, 10);
+    // Check duplicates
     const { rows } = await pool.query(
-      "INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id",
-      [username.trim(), hash]
+      "SELECT id FROM users WHERE email=$1 OR username=$2",
+      [email.toLowerCase(), username.trim()]
     );
-    const userId = rows[0].id;
-    await pool.query("INSERT INTO user_data (user_id) VALUES ($1) ON CONFLICT DO NOTHING", [userId]);
+    if (rows.length) return res.status(409).json({ error: "Email или имя уже заняты" });
+
+    // Generate 6-digit code
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+
+    // Invalidate old codes for this email
+    await pool.query("UPDATE verification_codes SET used=TRUE WHERE email=$1", [email.toLowerCase()]);
+
+    await pool.query(
+      "INSERT INTO verification_codes (email, code, expires_at) VALUES ($1, $2, $3)",
+      [email.toLowerCase(), code, expiresAt]
+    );
+
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: "Netfly — код подтверждения",
+      html: `<p>Твой код подтверждения: <b style="font-size:24px">${code}</b></p><p>Действителен 10 минут.</p>`,
+    });
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Ошибка отправки письма" });
+  }
+});
+
+app.post("/api/verify-code", async (req, res) => {
+  const { email, username, password, code } = req.body;
+  if (!email || !username || !password || !code)
+    return res.status(400).json({ error: "Заполни все поля" });
+
+  try {
+    const { rows } = await pool.query(
+      `SELECT * FROM verification_codes
+       WHERE email=$1 AND code=$2 AND used=FALSE AND expires_at > NOW()
+       ORDER BY id DESC LIMIT 1`,
+      [email.toLowerCase(), code.trim()]
+    );
+
+    if (!rows.length)
+      return res.status(400).json({ error: "Неверный или истёкший код" });
+
+    // Mark code as used
+    await pool.query("UPDATE verification_codes SET used=TRUE WHERE id=$1", [rows[0].id]);
+
+    const hash = await bcrypt.hash(password, 10);
+    const insert = await pool.query(
+      "INSERT INTO users (email, username, password_hash, verified) VALUES ($1,$2,$3,TRUE) RETURNING id",
+      [email.toLowerCase(), username.trim(), hash]
+    );
+    const userId = insert.rows[0].id;
+    await pool.query("INSERT INTO user_data (user_id) VALUES ($1)", [userId]);
+
     res.cookie("token", signToken(userId), COOKIE_OPTS);
     res.json({ ok: true, username: username.trim() });
   } catch (e) {
-    if (e.code === "23505") return res.status(409).json({ error: "Имя уже занято" });
+    if (e.code === "23505") return res.status(409).json({ error: "Email или имя уже заняты" });
     console.error(e);
     res.status(500).json({ error: "Ошибка сервера" });
   }
 });
 
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
 app.post("/api/login", async (req, res) => {
-  const { username, password } = req.body;
-  if (!username || !password) return res.status(400).json({ error: "Заполни все поля" });
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ error: "Заполни все поля" });
 
   try {
-    const { rows } = await pool.query("SELECT * FROM users WHERE username = $1", [username.trim()]);
+    const { rows } = await pool.query(
+      "SELECT * FROM users WHERE email=$1 OR username=$1",
+      [email.trim().toLowerCase()]
+    );
     const user = rows[0];
     if (!user || !(await bcrypt.compare(password, user.password_hash)))
-      return res.status(401).json({ error: "Неверное имя или пароль" });
+      return res.status(401).json({ error: "Неверный email/имя или пароль" });
 
     await pool.query("INSERT INTO user_data (user_id) VALUES ($1) ON CONFLICT DO NOTHING", [user.id]);
     res.cookie("token", signToken(user.id), COOKIE_OPTS);
@@ -70,7 +137,7 @@ app.post("/api/logout", (req, res) => {
 });
 
 app.get("/api/me", requireAuth, async (req, res) => {
-  const { rows } = await pool.query("SELECT username FROM users WHERE id = $1", [req.userId]);
+  const { rows } = await pool.query("SELECT username FROM users WHERE id=$1", [req.userId]);
   if (!rows[0]) return res.status(404).json({ error: "Not found" });
   res.json({ username: rows[0].username });
 });
@@ -78,31 +145,21 @@ app.get("/api/me", requireAuth, async (req, res) => {
 // ── User data sync ────────────────────────────────────────────────────────────
 
 app.get("/api/data", requireAuth, async (req, res) => {
-  const { rows } = await pool.query("SELECT * FROM user_data WHERE user_id = $1", [req.userId]);
+  const { rows } = await pool.query("SELECT * FROM user_data WHERE user_id=$1", [req.userId]);
   if (!rows[0]) return res.json({ movies: [], profile: {}, now_state: {}, omdb_ep_cache: {} });
   const r = rows[0];
-  res.json({
-    movies: r.movies,
-    profile: r.profile,
-    now_state: r.now_state,
-    omdb_ep_cache: r.omdb_ep_cache,
-  });
+  res.json({ movies: r.movies, profile: r.profile, now_state: r.now_state, omdb_ep_cache: r.omdb_ep_cache });
 });
 
 app.put("/api/data", requireAuth, async (req, res) => {
   const { movies, profile, now_state, omdb_ep_cache } = req.body;
   await pool.query(
     `INSERT INTO user_data (user_id, movies, profile, now_state, omdb_ep_cache, updated_at)
-     VALUES ($1, $2, $3, $4, $5, NOW())
+     VALUES ($1,$2,$3,$4,$5,NOW())
      ON CONFLICT (user_id) DO UPDATE SET
-       movies = $2, profile = $3, now_state = $4, omdb_ep_cache = $5, updated_at = NOW()`,
-    [
-      req.userId,
-      JSON.stringify(movies ?? []),
-      JSON.stringify(profile ?? {}),
-      JSON.stringify(now_state ?? {}),
-      JSON.stringify(omdb_ep_cache ?? {}),
-    ]
+       movies=$2, profile=$3, now_state=$4, omdb_ep_cache=$5, updated_at=NOW()`,
+    [req.userId, JSON.stringify(movies??[]), JSON.stringify(profile??{}),
+     JSON.stringify(now_state??{}), JSON.stringify(omdb_ep_cache??{})]
   );
   res.json({ ok: true });
 });
