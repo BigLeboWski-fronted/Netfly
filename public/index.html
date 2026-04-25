@@ -2300,6 +2300,18 @@ body::before{
 .syncDot.ok{ background:rgba(100,220,100,.9); }
 .syncDot.err{ background:rgba(255,100,100,.9); }
 
+
+.tgBanner{
+  display:inline-flex;align-items:center;gap:10px;
+  margin-top:18px;padding:12px 18px;
+  background:rgba(42,171,238,.1);
+  border:1px solid rgba(42,171,238,.3);
+  border-radius:12px;
+  color:var(--text);text-decoration:none;
+  font-size:14px;transition:background .2s,border-color .2s;
+}
+.tgBanner:hover{background:rgba(42,171,238,.18);border-color:rgba(42,171,238,.55);}
+.tgBannerTag{color:#2AABEE;font-weight:700;font-size:13px;white-space:nowrap;}
 </style>
 </head>
 <body>
@@ -2330,6 +2342,11 @@ body::before{
       <div class="homeCenter">
         <h1 class="homeTitle">Net<span class="red">fly</span></h1>
         <div class="homeSub">Твой личный трекер фильмов и сериалов: оценивай, сохраняй “буду смотреть”, собирай избранное и находи новые идеи.</div>
+        <a class="tgBanner" href="https://t.me/netfly1gg_bot" target="_blank" rel="noopener">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.93 6.686-1.683 7.927c-.126.56-.456.697-.924.433l-2.56-1.887-1.235 1.188c-.137.137-.252.252-.516.252l.184-2.61 4.75-4.29c.207-.184-.045-.286-.32-.102L7.93 14.42l-2.52-.787c-.548-.172-.56-.548.114-.812l9.83-3.79c.457-.165.857.102.576.655z" fill="#2AABEE"/></svg>
+          <span>Не знаешь что посмотреть? <strong>Выбери в Telegram боте</strong></span>
+          <span class="tgBannerTag">@netfly1gg_bot</span>
+        </a>
       </div>
 
       <div class="card">
@@ -7224,3 +7241,4 @@ init();
   <div id="toastHost" class="toastHost"></div>
 </body>
 </html>
+
