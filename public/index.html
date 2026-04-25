@@ -2779,7 +2779,7 @@ body::before{
   <script>
     // ========= Config =========
     // External endpoints + local storage keys live here so they are easy to update.
-    const OMDB_BASE = "https://omdb-proxy.makeenkoroma69.workers.dev/";
+    const OMDB_BASE = "/api/omdb";
 
     const STORAGE_KEY_V6 = "netfly_movies_v6";
     const PROFILE_KEY_V2 = "netfly_profile_v2";
@@ -4588,9 +4588,8 @@ row.appendChild(range);
     }
 
     async function omdbFetch(params){
-      const url = new URL(OMDB_BASE);
-      Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, String(v)));
-      const res = await fetch(url.toString());
+      const qs = new URLSearchParams(Object.fromEntries(Object.entries(params).map(([k,v])=>[k,String(v)])));
+      const res = await fetch(`${OMDB_BASE}?${qs}`);
       if(!res.ok) throw new Error(`HTTP ${res.status}`);
       return await res.json();
     }

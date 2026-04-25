@@ -164,6 +164,19 @@ app.put("/api/data", requireAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
+// ── OMDB proxy ────────────────────────────────────────────────────────────────
+
+app.get("/api/omdb", async (req, res) => {
+  const params = new URLSearchParams({ ...req.query, apikey: process.env.OMDB_API_KEY });
+  try {
+    const r = await fetch(`https://www.omdbapi.com/?${params}`);
+    const data = await r.json();
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: "OMDB error" });
+  }
+});
+
 // ── Telegram integration ──────────────────────────────────────────────────────
 
 const TG_SECRET = process.env.TG_SECRET;
