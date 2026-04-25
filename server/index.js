@@ -237,7 +237,7 @@ app.post("/api/tg/webapp-login", async (req, res) => {
 
   console.log("hash from client:", hash);
   console.log("expected hash:", expectedHash);
-  console.log("dataCheckString:", dataCheckString);
+  console.log("token used:", JSON.stringify(process.env.TG_TOKEN));
 
   if (expectedHash !== hash) return res.status(403).json({ error: "Invalid initData" });
 
