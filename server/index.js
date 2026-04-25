@@ -18,6 +18,8 @@ const COOKIE_OPTS = {
   maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
 };
 
+app.get("/health", (req, res) => res.json({ ok: true }));
+
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
 app.post("/api/register", async (req, res) => {
