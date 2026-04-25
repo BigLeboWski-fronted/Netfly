@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Netfly</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
 :root{
   --bg:#0b0b0c;
@@ -7233,7 +7234,31 @@ if(finishToRated){
 
   checkSession();
 }
-init();
+// Telegram Mini App autologin
+  (async function tgAutoLogin() {
+    const tg = window.Telegram?.WebApp;
+    if (!tg || !tg.initData) return;
+    if (sessionStorage.getItem('tgAutoLogged')) return;
+    tg.ready();
+    try {
+      const meRes = await fetch('/api/me');
+      if (meRes.ok) return; // already logged in
+      const res = await fetch('/api/tg/webapp-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData: tg.initData }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.ok) {
+          sessionStorage.setItem('tgAutoLogged', '1');
+          window.location.reload();
+        }
+      }
+    } catch {}
+  })();
+
+  init();
 
   async function tgGenCode() {
     const btn = document.getElementById('tgGenCodeBtn');

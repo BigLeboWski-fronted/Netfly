@@ -203,6 +203,37 @@ app.post("/api/tg/verify-link", async (req, res) => {
   res.json({ ok: true, username: user.rows[0].username });
 });
 
+// Auto-login via Telegram Mini App initData
+app.post("/api/tg/webapp-login", async (req, res) => {
+  const { initData } = req.body;
+  if (!initData) return res.status(400).json({ error: "No initData" });
+
+  // Verify Telegram signature
+  const crypto = require("crypto");
+  const params = new URLSearchParams(initData);
+  const hash = params.get("hash");
+  params.delete("hash");
+  const dataCheckString = [...params.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => `${k}=${v}`)
+    .join("\n");
+  const secretKey = crypto.createHmac("sha256", "WebAppData").update(process.env.TG_TOKEN).digest();
+  const expectedHash = crypto.createHmac("sha256", secretKey).update(dataCheckString).digest("hex");
+  if (expectedHash !== hash) return res.status(403).json({ error: "Invalid initData" });
+
+  const user = JSON.parse(params.get("user") || "{}");
+  const telegramId = user.id;
+  if (!telegramId) return res.status(400).json({ error: "No user in initData" });
+
+  const link = await pool.query("SELECT user_id FROM telegram_links WHERE telegram_id=$1", [telegramId]);
+  if (!link.rows.length) return res.status(404).json({ error: "Account not linked" });
+
+  const userId = link.rows[0].user_id;
+  res.cookie("token", signToken(userId), COOKIE_OPTS);
+  const u = await pool.query("SELECT username FROM users WHERE id=$1", [userId]);
+  res.json({ ok: true, username: u.rows[0].username });
+});
+
 // Get profile data by telegram_id (called from bot)
 app.get("/api/tg/profile", async (req, res) => {
   if (req.headers["x-tg-secret"] !== TG_SECRET)
