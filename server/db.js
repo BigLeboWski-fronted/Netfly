@@ -33,6 +33,17 @@ async function migrate() {
       updated_at TIMESTAMPTZ DEFAULT NOW()
     );
   `);
+
+  // Safe migrations for existing tables
+  await pool.query(`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS verified BOOLEAN NOT NULL DEFAULT FALSE;
+  `);
+  // Fill email from username for old rows, then make unique+not null
+  await pool.query(`UPDATE users SET email = username WHERE email IS NULL;`);
+  await pool.query(`
+    ALTER TABLE users ALTER COLUMN email SET NOT NULL;
+  `).catch(() => {});
 }
 
 module.exports = { pool, migrate };
