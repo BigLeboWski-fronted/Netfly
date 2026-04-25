@@ -1,6 +1,6 @@
 require("dotenv").config();
 const express = require("express");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const cookieParser = require("cookie-parser");
 const path = require("path");
 const { pool, migrate } = require("./db");
