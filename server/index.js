@@ -164,6 +164,90 @@ app.put("/api/data", requireAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Telegram integration ──────────────────────────────────────────────────────
+
+const TG_SECRET = process.env.TG_SECRET;
+
+// Generate link code (called from site, requires auth)
+app.post("/api/tg/gen-code", requireAuth, async (req, res) => {
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+  await pool.query("UPDATE link_codes SET used=TRUE WHERE user_id=$1", [req.userId]);
+  await pool.query(
+    "INSERT INTO link_codes (user_id, code, expires_at) VALUES ($1,$2,$3)",
+    [req.userId, code, expiresAt]
+  );
+  res.json({ code });
+});
+
+// Verify link code + bind telegram_id (called from bot)
+app.post("/api/tg/verify-link", async (req, res) => {
+  if (req.headers["x-tg-secret"] !== TG_SECRET)
+    return res.status(403).json({ error: "Forbidden" });
+  const { code, telegram_id } = req.body;
+  if (!code || !telegram_id) return res.status(400).json({ error: "Bad request" });
+
+  const { rows } = await pool.query(
+    `SELECT * FROM link_codes WHERE code=$1 AND used=FALSE AND expires_at > NOW() LIMIT 1`,
+    [code]
+  );
+  if (!rows.length) return res.status(400).json({ error: "Неверный или истёкший код" });
+
+  await pool.query("UPDATE link_codes SET used=TRUE WHERE id=$1", [rows[0].id]);
+  await pool.query(
+    `INSERT INTO telegram_links (telegram_id, user_id) VALUES ($1,$2)
+     ON CONFLICT (telegram_id) DO UPDATE SET user_id=$2, linked_at=NOW()`,
+    [telegram_id, rows[0].user_id]
+  );
+  const user = await pool.query("SELECT username FROM users WHERE id=$1", [rows[0].user_id]);
+  res.json({ ok: true, username: user.rows[0].username });
+});
+
+// Get profile data by telegram_id (called from bot)
+app.get("/api/tg/profile", async (req, res) => {
+  if (req.headers["x-tg-secret"] !== TG_SECRET)
+    return res.status(403).json({ error: "Forbidden" });
+  const { telegram_id } = req.query;
+  if (!telegram_id) return res.status(400).json({ error: "Bad request" });
+
+  const link = await pool.query("SELECT user_id FROM telegram_links WHERE telegram_id=$1", [telegram_id]);
+  if (!link.rows.length) return res.status(404).json({ error: "Аккаунт не привязан" });
+
+  const userId = link.rows[0].user_id;
+  const [userRes, dataRes] = await Promise.all([
+    pool.query("SELECT username FROM users WHERE id=$1", [userId]),
+    pool.query("SELECT movies, profile FROM user_data WHERE user_id=$1", [userId]),
+  ]);
+
+  const username = userRes.rows[0]?.username || "";
+  const movies = dataRes.rows[0]?.movies || [];
+  const profile = dataRes.rows[0]?.profile || {};
+
+  const watched = movies.filter(m => (m.status || "watched") === "watched");
+  const scores = watched.map(m => {
+    const vals = Object.values(m.scores || {}).filter(v => typeof v === "number");
+    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+  }).filter(s => s !== null);
+  const avgScore = scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : null;
+
+  const best = watched
+    .map(m => {
+      const vals = Object.values(m.scores || {}).filter(v => typeof v === "number");
+      const final = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+      return { name: m.name, final };
+    })
+    .sort((a, b) => b.final - a.final)[0] || null;
+
+  res.json({
+    username,
+    watched_count: watched.length,
+    avg_score: avgScore,
+    best_movie: best?.name || null,
+    fav_director: profile.favDirectorName || null,
+    fav_actor: profile.favActorName || null,
+  });
+});
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 
 const PORT = process.env.PORT || 3000;

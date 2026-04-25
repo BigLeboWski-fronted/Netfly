@@ -2686,6 +2686,15 @@ body::before{
           </div>
         </div>
 
+        <div class="profileSection" style="margin-top:10px;">
+          <div class="secHead"><h3>Telegram</h3></div>
+          <button class="primary" id="tgGenCodeBtn" onclick="tgGenCode()">🔗 Привязать Telegram</button>
+          <div id="tgCodeDisplay" style="display:none;margin-top:10px;">
+            <div style="font-size:13px;color:var(--muted);margin-bottom:6px;">Введи этот код в боте командой <b>/link КОД</b>. Действителен 10 минут.</div>
+            <div id="tgCode" style="font-size:32px;font-weight:900;letter-spacing:6px;"></div>
+          </div>
+        </div>
+
         <datalist id="directorDatalist"></datalist>
         <datalist id="actorDatalist"></datalist>
       </section>
@@ -7225,6 +7234,24 @@ if(finishToRated){
   checkSession();
 }
 init();
+
+  async function tgGenCode() {
+    const btn = document.getElementById('tgGenCodeBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Генерация...';
+    try {
+      const res = await fetch('/api/tg/gen-code', { method: 'POST' });
+      if (!res.ok) throw new Error();
+      const { code } = await res.json();
+      document.getElementById('tgCode').textContent = code;
+      document.getElementById('tgCodeDisplay').style.display = 'block';
+      btn.textContent = '🔄 Новый код';
+    } catch {
+      btn.textContent = '🔗 Привязать Telegram';
+      alert('Ошибка. Попробуй ещё раз.');
+    }
+    btn.disabled = false;
+  }
 
   </script>
 
