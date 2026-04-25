@@ -2694,6 +2694,30 @@ body::before{
     </div>
 
 
+  <!-- Auth screen -->
+  <div id="authScreen">
+    <div class="authCard">
+      <div class="authLogo">Net<span class="red">fly</span></div>
+      <div class="authSub">Твой личный трекер фильмов и сериалов</div>
+      <div class="authTabs">
+        <button class="authTab active" id="tabLogin" type="button">Войти</button>
+        <button class="authTab" id="tabRegister" type="button">Регистрация</button>
+      </div>
+      <div class="authFields">
+        <div>
+          <label for="authUsername">Имя пользователя</label>
+          <input id="authUsername" type="text" placeholder="netflyer" maxlength="40" autocomplete="username" />
+        </div>
+        <div>
+          <label for="authPassword">Пароль</label>
+          <input id="authPassword" type="password" placeholder="••••••" maxlength="72" autocomplete="current-password" />
+        </div>
+      </div>
+      <button class="authSubmit" id="authSubmit" type="button">Войти</button>
+      <div class="authError" id="authError"></div>
+    </div>
+  </div>
+
   <script>
     // ========= Config =========
     // External endpoints + local storage keys live here so they are easy to update.
@@ -7128,29 +7152,5 @@ init();
 
   <div id="confettiLayer" class="confettiLayer" aria-hidden="true"></div>
   <div id="toastHost" class="toastHost"></div>
-
-  <!-- Auth screen -->
-  <div id="authScreen">
-    <div class="authCard">
-      <div class="authLogo">Net<span class="red">fly</span></div>
-      <div class="authSub">Твой личный трекер фильмов и сериалов</div>
-      <div class="authTabs">
-        <button class="authTab active" id="tabLogin" type="button">Войти</button>
-        <button class="authTab" id="tabRegister" type="button">Регистрация</button>
-      </div>
-      <div class="authFields">
-        <div>
-          <label for="authUsername">Имя пользователя</label>
-          <input id="authUsername" type="text" placeholder="netflyer" maxlength="40" autocomplete="username" />
-        </div>
-        <div>
-          <label for="authPassword">Пароль</label>
-          <input id="authPassword" type="password" placeholder="••••••" maxlength="72" autocomplete="current-password" />
-        </div>
-      </div>
-      <button class="authSubmit" id="authSubmit" type="button">Войти</button>
-      <div class="authError" id="authError"></div>
-    </div>
-  </div>
 </body>
 </html>
