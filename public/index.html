@@ -842,16 +842,26 @@ details[open] .itemBody{
     flex-wrap: wrap;
     align-items: center;
   }
+  /* logo + right controls stay on row 1 */
+  .brandMini { order: 1; }
+  .profileWrap { order: 2; margin-left: auto; }
+  .userBadge { order: 2; }
+  /* nav drops to full-width row 2 */
   .nav{
     order: 3;
     width: 100%;
     justify-content: flex-start;
     overflow-x: auto;
-    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+    scrollbar-width: none;
   }
+  .nav::-webkit-scrollbar { display: none; }
   .navBtn{
     padding: 8px 10px;
     font-size: 12px;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   .wrap{
     margin: 10px auto 20px;
@@ -865,81 +875,6 @@ details[open] .itemBody{
   .listTop{
     flex-direction: column;
     align-items: flex-start;
-  }
-  .nameRow{
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .formGrid,
-  .formGrid2{
-    grid-template-columns: 1fr;
-  }
-  .rowTop{
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .summary{
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .score{
-    min-width: 0;
-    width: 100%;
-  }
-  .btns{
-    justify-content: flex-start;
-  }
-  details.item summary{
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .sumRight{
-    width: 100%;
-    justify-content: flex-start;
-    flex-wrap: wrap;
-  }
-  .controls{
-    grid-template-columns: 1fr !important;
-  }
-  .posterBig{
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .posterBigImg{
-    width: min(240px, 100%);
-    height: auto;
-    aspect-ratio: 2 / 3;
-    margin: 0 auto;
-  }
-  .posterMeta{
-    min-width: 0;
-  }
-  .sessionRow{
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .profileHero{
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .avatarCircle{
-    width: 48px;
-    height: 48px;
-  }
-  .profileTitle{
-    font-size: 20px;
-  }
-  .profileSubtitle{
-    font-size: 12px;
-  }
-  .statTiles{
-    grid-template-columns: 1fr;
-  }
-  .profileSection{
-    padding: 12px;
-  }
-  .favGrid{
-    grid-template-columns: 1fr;
   }
 }
 
