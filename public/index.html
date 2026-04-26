@@ -6202,21 +6202,21 @@ body.appendChild(actionsRow);
         const sd=await fetch(`${KP_BASE}/seasons/${kpId2}`).then(r=>r.json());
         if(Array.isArray(sd.items)){for(const season of sd.items){const sn=String(season.number);if(!entry.seasons[sn]&&Array.isArray(season.episodes)){entry.seasons[sn]=season.episodes.map((ep,i)=>({Episode:String(ep.episodeNumber||i+1),Title:ep.nameRu||ep.nameEn||`Эпизод ${i+1}`,Released:ep.releaseDate||"",imdbRating:"",imdbID:""}));totalEpisodes+=entry.seasons[sn].length;}else if(entry.seasons[sn])totalEpisodes+=entry.seasons[sn].length;}}
       }catch{}}
-      //
-              Episode: String(ep.Episode || ""),
-              Title: String(ep.Title || ""),
-              Released: String(ep.Released || ""),
-              imdbRating: String(ep.imdbRating || ""),
-              imdbID: String(ep.imdbID || "")
-            }));
-      //
-          }else{
-      //
-          }
-        }catch{
-          entry.seasons[String(s)] = [];
-        }
-      }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
       entry.totalEpisodes = totalEpisodes || null;
       saveEpCache();
@@ -6684,24 +6684,24 @@ if(!nowState.imdbID){
         const kpData=await fetch(`${KP_BASE}/search?keyword=${encodeURIComponent(q)}`).then(r=>r.json());
         const ser=Array.isArray(kpData.films)?kpData.films.find(f=>f.type==="TV_SERIES"||f.type==="MINI_SERIES"):null;
         if(ser){const raw=await fetch(`${KP_BASE}/film/${ser.filmId}`).then(r=>r.json());applyNowFromOmdbDetails(kpNormFilm(raw));return true;}
-          return true;
-        }
+        if(ser){const raw=await fetch(`${KP_BASE}/film/${ser.filmId}`).then(r=>r.json());applyNowFromOmdbDetails(kpNormFilm(raw));return true;}
 
-        // 2) Fallback: search list -> first series
-        //
-        //
-        //
-        //
-        //
-        //
-              applyNowFromOmdbDetails(d);
-              return true;
-            }
-          }
-        }
-      }catch(e){
-        // handled by caller
-      }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
       return false;
     }
 
