@@ -164,48 +164,17 @@ app.put("/api/data", requireAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
-// ── Kinopoisk proxy ───────────────────────────────────────────────────────────
+// ── OMDB proxy ────────────────────────────────────────────────────────────────
 
-const KP_KEY = process.env.KP_API_KEY;
-const KP_HEADERS = { "X-API-KEY": KP_KEY, "Content-Type": "application/json" };
-
-app.get("/api/kp/search", async (req, res) => {
-  const { keyword, page = 1 } = req.query;
-  if (!keyword) return res.status(400).json({ error: "keyword required" });
+app.get("/api/omdb", async (req, res) => {
+  const params = new URLSearchParams({ ...req.query, apikey: process.env.OMDB_API_KEY });
   try {
-    const r = await fetch(
-      `https://kinopoiskapiunofficial.tech/api/v2.1/films/search-by-keyword?keyword=${encodeURIComponent(keyword)}&page=${page}`,
-      { headers: KP_HEADERS }
-    );
-    res.json(await r.json());
-  } catch { res.status(500).json({ error: "KP error" }); }
-});
-
-app.get("/api/kp/seasons/:id", async (req, res) => {
-  try {
-    const r = await fetch(`https://kinopoiskapiunofficial.tech/api/v2.2/films/${req.params.id}/seasons`, { headers: KP_HEADERS });
-    res.json(await r.json());
-  } catch { res.status(500).json({ error: "KP error" }); }
-});
-
-app.get("/api/kp/seasons/:id", async (req, res) => {
-  try {
-    const r = await fetch(`https://kinopoiskapiunofficial.tech/api/v2.2/films/${req.params.id}/seasons`, { headers: KP_HEADERS });
-    res.json(await r.json());
-  } catch { res.status(500).json({ error: "KP error" }); }
-});
-
-app.get("/api/kp/film/:id", async (req, res) => {
-  const { id } = req.params;
-  try {
-    const [film, staff] = await Promise.all([
-      fetch(`https://kinopoiskapiunofficial.tech/api/v2.2/films/${id}`, { headers: KP_HEADERS }).then(r => r.json()),
-      fetch(`https://kinopoiskapiunofficial.tech/api/v1/staff?filmId=${id}`, { headers: KP_HEADERS }).then(r => r.json()),
-    ]);
-    const directors = Array.isArray(staff) ? staff.filter(s => s.professionKey === "DIRECTOR").map(s => s.nameRu || s.nameEn).filter(Boolean) : [];
-    const actors = Array.isArray(staff) ? staff.filter(s => s.professionKey === "ACTOR").slice(0, 5).map(s => s.nameRu || s.nameEn).filter(Boolean) : [];
-    res.json({ ...film, directors, actors });
-  } catch { res.status(500).json({ error: "KP error" }); }
+    const r = await fetch(`https://www.omdbapi.com/?${params}`);
+    const data = await r.json();
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: "OMDB error" });
+  }
 });
 
 // ── Telegram integration ──────────────────────────────────────────────────────

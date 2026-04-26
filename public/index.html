@@ -2779,7 +2779,7 @@ body::before{
   <script>
     // ========= Config =========
     // External endpoints + local storage keys live here so they are easy to update.
-    const KP_BASE = "/api/kp";
+    const OMDB_BASE = "/api/omdb";
 
     const STORAGE_KEY_V6 = "netfly_movies_v6";
     const PROFILE_KEY_V2 = "netfly_profile_v2";
@@ -4585,7 +4585,7 @@ row.appendChild(range);
 
         row.addEventListener("click", async () => {
           hideResults();
-          await applyOmdbByImdbId(it._kpId);
+          await applyOmdbByImdbId(it.imdbID);
         });
 
         els.omdbResults.appendChild(row);
@@ -4594,12 +4594,12 @@ row.appendChild(range);
       els.omdbResults.classList.add("show");
     }
 
-    function kpNormFilm(f){
-      const rt = f.filmLength?(typeof f.filmLength==="number"?`${f.filmLength} min`:f.filmLength):null;
-      return{_kpId:f.filmId||f.kinopoiskId,Title:f.nameRu||f.nameOriginal||f.nameEn||"",Year:String(f.year||""),Type:(f.type==="TV_SERIES"||f.type==="MINI_SERIES")?"series":"movie",Poster:f.posterUrl||f.posterUrlPreview||"N/A",imdbRating:f.ratingImdb?String(f.ratingImdb):(f.rating?String(f.rating):"N/A"),Genre:Array.isArray(f.genres)?f.genres.map(g=>g.genre).join(", "):"N/A",Runtime:rt||"N/A",Director:Array.isArray(f.directors)?f.directors.join(", "):"N/A",Actors:Array.isArray(f.actors)?f.actors.join(", "):"N/A",Plot:f.description||f.shortDescription||"N/A",imdbID:f.imdbId||null,Response:"True"};
+    async function omdbFetch(params){
+      const qs = new URLSearchParams(Object.fromEntries(Object.entries(params).map(([k,v])=>[k,String(v)])));
+      const res = await fetch(`${OMDB_BASE}?${qs}`);
+      if(!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
     }
-
-
 
     async function searchOmdb(query){
       const q = String(query || "").trim();
@@ -4618,14 +4618,14 @@ row.appendChild(range);
       hideResults();
 
       try{
-        const data = await fetch(`${KP_BASE}/search?keyword=${encodeURIComponent(q)}`).then(r=>r.json());
-        const list = Array.isArray(data.films)?data.films.slice(0,10).map(kpNormFilm):[];
-        if(!list.length){setOmdbStatus("Ничего не найдено.",true);return;}
+        const data = await omdbFetch({ s: q }); // movie + series
+        if(data.Response === "False"){
+          setOmdbStatus(data.Error || "Ничего не найдено.", true);
           return;
         }
 
-        //
-        //
+        const list = Array.isArray(data.Search) ? data.Search.slice(0, 10) : [];
+        if(list.length === 0){
           setOmdbStatus("Ничего не найдено.", true);
           return;
         }
@@ -4637,25 +4637,46 @@ row.appendChild(range);
       }
     }
 
-    async function applyOmdbByImdbId(kpId){
+    async function applyOmdbByImdbId(imdbID){
       setOmdbStatus("Загружаю детали…");
+
       try{
-        const raw = await fetch(`${KP_BASE}/film/${kpId}`).then(r=>r.json());
-        const d = kpNormFilm(raw);
-        if(d.Title) els.movieName.value = d.Title;
-        if(d.Director && d.Director!=="N/A") els.director.value = d.Director;
-        if(d.Year){ const m=String(d.Year).match(/\d{4}/); if(m) els.year.value=m[0]; }
+        const d = await omdbFetch({ i: imdbID, plot: "short" });
+        if(d.Response === "False"){
+          setOmdbStatus(d.Error || "Не удалось получить детали.", true);
+          return;
+        }
+
+        if(d.Title && d.Title !== "N/A") els.movieName.value = d.Title;
+        if(d.Director && d.Director !== "N/A") els.director.value = d.Director;
+
+        if(d.Year && d.Year !== "N/A"){
+          const match = String(d.Year).match(/\d{4}/);
+          if(match) els.year.value = match[0];
+        }
+
+        const posterUrl = (d.Poster && d.Poster !== "N/A") ? d.Poster : null;
+
         omdbMetaDraft = {
-          title: d.Title||null, imdbID: d.imdbID||null, kpId,
-          posterUrl: (d.Poster&&d.Poster!=="N/A")?d.Poster:null,
-          genre: (d.Genre&&d.Genre!=="N/A")?d.Genre:null,
-          runtime: (d.Runtime&&d.Runtime!=="N/A")?d.Runtime:null,
-          imdbRating: (d.imdbRating&&d.imdbRating!=="N/A")?d.imdbRating:null,
-          type: d.Type||null,
-          actors: (d.Actors&&d.Actors!=="N/A")?d.Actors.split(",").map(a=>a.trim()).filter(Boolean):[],
-        };
-        setOmdbStatus("Готово: данные подставлены. Теперь поставь оценки и нажми «Добавить».");
-      }catch{ setOmdbStatus("Ошибка при загрузке деталей из Кинопоиска.", true); }
+  title: (d.Title && d.Title !== "N/A") ? d.Title : null,
+          imdbID: (d.imdbID && d.imdbID !== "N/A") ? d.imdbID : null,
+  posterUrl: (d.Poster && d.Poster !== "N/A") ? d.Poster : null,
+  genre: (d.Genre && d.Genre !== "N/A") ? d.Genre : null,
+  runtime: (d.Runtime && d.Runtime !== "N/A") ? d.Runtime : null,
+  imdbRating: (d.imdbRating && d.imdbRating !== "N/A") ? d.imdbRating : null,
+  type: (d.Type && d.Type !== "N/A") ? d.Type : null,
+
+  // 🔥 ВАЖНО: ЭТО ДОЛЖНО БЫТЬ ВНУТРИ ЭТОГО ЖЕ ОБЪЕКТА
+  actors: (d.Actors && d.Actors !== "N/A")
+    ? d.Actors.split(",").map(a => a.trim()).filter(Boolean)
+    : []
+};
+
+
+        setOmdbStatus("Готово: данные подставлены. Теперь поставь оценки и нажми “Добавить”.");
+      }catch{
+        setOmdbStatus("Ошибка при загрузке деталей из OMDb.", true);
+      }
     }
 
     function scheduleOmdbAutocomplete(){
@@ -4709,8 +4730,8 @@ row.appendChild(range);
           try{
             nowSetOmdbStatus("Загружаю…");
             nowHideOmdbResults();
-            const raw=await fetch(`${KP_BASE}/film/${it._kpId}`).then(r=>r.json());
-            const d=kpNormFilm(raw);
+            const d = await omdbFetch({ i: it.imdbID, plot:"short" });
+            if(d && d.Response === "True") applyNowFromOmdbDetails(d);
             nowSetOmdbStatus("Готово: сериал выбран и активирован.");
             goTo("now");
           }catch{
@@ -4742,14 +4763,14 @@ row.appendChild(range);
 
       try{
         // Поиск как во вкладке «Оценить», но только сериалы
-        const data=await fetch(`${KP_BASE}/search?keyword=${encodeURIComponent(q)}`).then(r=>r.json());
-        const list=Array.isArray(data.films)?data.films.filter(f=>f.type==="TV_SERIES"||f.type==="MINI_SERIES").slice(0,10).map(kpNormFilm):[];
-        if(!list.length){nowSetOmdbStatus("Ничего не найдено.",true);return;}
+        const data = await omdbFetch({ s: q, type: "series" });
+        if(data.Response === "False"){
+          nowSetOmdbStatus(data.Error || "Ничего не найдено.", true);
           return;
         }
 
-        //
-        //
+        const list = Array.isArray(data.Search) ? data.Search.slice(0, 10) : [];
+        if(list.length === 0){
           nowSetOmdbStatus("Ничего не найдено.", true);
           return;
         }
@@ -6169,21 +6190,21 @@ body.appendChild(actionsRow);
 
       // fetch series details to get totalSeasons (if not set)
       try{
-        if(nowState._kpId||entry._kpId){
-          try{
-            const kpId=nowState._kpId||entry._kpId;
-            const raw=await fetch(`${KP_BASE}/film/${kpId}`).then(r=>r.json());
-            const d=kpNormFilm(raw);
-            if(!nowState.runtimeMin){const rm=parseRuntimeMinutes(d.Runtime);if(rm)nowState.runtimeMin=rm;}
-            if(!nowState.posterUrl&&d.Poster&&d.Poster!=="N/A")nowState.posterUrl=d.Poster;
-            if(!nowState.title&&d.Title)nowState.title=d.Title;
-          }catch{}
-        }
-            //
+        const d = await omdbFetch({ i: nowState.imdbID, plot:"short" });
+        if(d.Response === "True"){
+          const ts = Number(d.totalSeasons || 0) || null;
+          entry.totalSeasons = ts;
+          if(!nowState.totalSeasons && ts) nowState.totalSeasons = ts;
+          if(!nowState.runtimeMin){
+            const rm = parseRuntimeMinutes(d.Runtime);
+            if(rm) nowState.runtimeMin = rm;
+          }
+          if(!nowState.posterUrl && d.Poster && d.Poster !== "N/A") nowState.posterUrl = d.Poster;
+          if(!nowState.title && d.Title && d.Title !== "N/A") nowState.title = d.Title;
         }
       }catch{}
 
-            //
+      const totalSeasons = Number(entry.totalSeasons || nowState.totalSeasons || 0) || 0;
       if(!totalSeasons){
         // no seasons info — keep empty
         entry.seasons = entry.seasons || {};
@@ -6197,26 +6218,26 @@ body.appendChild(actionsRow);
 
       // Fetch each season list (lightweight; OMDb returns Episodes array)
       for(let s=1; s<=totalSeasons; s++){
-      const kpId2=nowState._kpId||entry._kpId;
-      if(kpId2){try{
-        const sd=await fetch(`${KP_BASE}/seasons/${kpId2}`).then(r=>r.json());
-        if(Array.isArray(sd.items)){for(const season of sd.items){const sn=String(season.number);if(!entry.seasons[sn]&&Array.isArray(season.episodes)){entry.seasons[sn]=season.episodes.map((ep,i)=>({Episode:String(ep.episodeNumber||i+1),Title:ep.nameRu||ep.nameEn||`Эпизод ${i+1}`,Released:ep.releaseDate||"",imdbRating:"",imdbID:""}));totalEpisodes+=entry.seasons[sn].length;}else if(entry.seasons[sn])totalEpisodes+=entry.seasons[sn].length;}}
-      }catch{}}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        if(entry.seasons[String(s)]) { totalEpisodes += entry.seasons[String(s)].length; continue; }
+        try{
+          const seasonData = await omdbFetch({ i: nowState.imdbID, Season: s });
+          if(seasonData.Response === "True" && Array.isArray(seasonData.Episodes)){
+            // Normalize: keep only fields we need
+            entry.seasons[String(s)] = seasonData.Episodes.map(ep => ({
+              Episode: String(ep.Episode || ""),
+              Title: String(ep.Title || ""),
+              Released: String(ep.Released || ""),
+              imdbRating: String(ep.imdbRating || ""),
+              imdbID: String(ep.imdbID || "")
+            }));
+            totalEpisodes += entry.seasons[String(s)].length;
+          }else{
+            entry.seasons[String(s)] = [];
+          }
+        }catch{
+          entry.seasons[String(s)] = [];
+        }
+      }
 
       entry.totalEpisodes = totalEpisodes || null;
       saveEpCache();
@@ -6681,27 +6702,27 @@ if(!nowState.imdbID){
 
       // 1) Try exact title -> series
       try{
-        const kpData=await fetch(`${KP_BASE}/search?keyword=${encodeURIComponent(q)}`).then(r=>r.json());
-        const ser=Array.isArray(kpData.films)?kpData.films.find(f=>f.type==="TV_SERIES"||f.type==="MINI_SERIES"):null;
-        if(ser){const raw=await fetch(`${KP_BASE}/film/${ser.filmId}`).then(r=>r.json());applyNowFromOmdbDetails(kpNormFilm(raw));return true;}
-        if(ser){const raw=await fetch(`${KP_BASE}/film/${ser.filmId}`).then(r=>r.json());applyNowFromOmdbDetails(kpNormFilm(raw));return true;}
+        let d = await omdbFetch({ t: q, type: "series", plot:"short" });
+        if(d && d.Response === "True" && String(d.Type||"").toLowerCase() === "series"){
+          applyNowFromOmdbDetails(d);
+          return true;
+        }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        // 2) Fallback: search list -> first series
+        const sData = await omdbFetch({ s: q, type: "series" });
+        if(sData && sData.Response === "True" && Array.isArray(sData.Search) && sData.Search.length){
+          const first = sData.Search.find(x => String(x.Type||"").toLowerCase() === "series") || sData.Search[0];
+          if(first && first.imdbID){
+            d = await omdbFetch({ i: first.imdbID, plot:"short" });
+            if(d && d.Response === "True" && String(d.Type||"").toLowerCase() === "series"){
+              applyNowFromOmdbDetails(d);
+              return true;
+            }
+          }
+        }
+      }catch(e){
+        // handled by caller
+      }
       return false;
     }
 
