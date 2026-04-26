@@ -2771,8 +2771,41 @@ body::before{
         </div>
       </div>
 
+
+      <!-- Step: forgot password — enter email -->
+      <div id="authStepForgot" class="authFields" style="display:none">
+        <div style="text-align:center; color:var(--muted); font-size:13px; margin-bottom:4px">
+          Введи email, и мы пришлём код для сброса пароля
+        </div>
+        <div>
+          <label for="authForgotEmail">Email</label>
+          <input id="authForgotEmail" type="email" placeholder="you@example.com" maxlength="80" autocomplete="email" />
+        </div>
+      </div>
+
+      <!-- Step: reset password — enter code + new password -->
+      <div id="authStepReset" class="authFields" style="display:none">
+        <div style="text-align:center; color:var(--muted); font-size:13px; margin-bottom:4px">
+          Код отправлен на <b id="authResetEmailHint" style="color:#fff"></b>
+        </div>
+        <div>
+          <label for="authResetCode">Код из письма</label>
+          <input id="authResetCode" type="text" placeholder="123456" maxlength="6" autocomplete="one-time-code"
+            style="text-align:center; font-size:22px; letter-spacing:8px; font-weight:900" />
+        </div>
+        <div>
+          <label for="authNewPassword">Новый пароль</label>
+          <input id="authNewPassword" type="password" placeholder="••••••" maxlength="72" autocomplete="new-password" />
+        </div>
+      </div>
       <button class="authSubmit" id="authSubmit" type="button">Войти</button>
       <div class="authError" id="authError"></div>
+      <div style="text-align:center; margin-top:10px">
+        <button id="forgotPasswordLink" type="button"
+          style="background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;text-decoration:underline;padding:0">
+          Забыл пароль
+        </button>
+      </div>
     </div>
   </div>
 
@@ -7105,7 +7138,7 @@ if(finishToRated){
     }
 
     // Auth UI
-    let authMode = "login"; // "login" | "register" | "code"
+    let authMode = "login"; // "login" | "register" | "code" | "forgot" | "resetCode"
     const _authSubmit = document.getElementById("authSubmit");
     const _authError = document.getElementById("authError");
 
@@ -7113,9 +7146,12 @@ if(finishToRated){
     function authSetLoading(on){ _authSubmit.disabled = on; }
 
     function showAuthStep(step){
-      document.getElementById("authStepLogin").style.display   = step === "login"    ? "" : "none";
-      document.getElementById("authStepRegister").style.display = step === "register" ? "" : "none";
-      document.getElementById("authStepCode").style.display    = step === "code"     ? "" : "none";
+      document.getElementById("authStepLogin").style.display    = step === "login"     ? "" : "none";
+      document.getElementById("authStepRegister").style.display  = step === "register"  ? "" : "none";
+      document.getElementById("authStepCode").style.display     = step === "code"      ? "" : "none";
+      document.getElementById("authStepForgot").style.display   = step === "forgot"    ? "" : "none";
+      document.getElementById("authStepReset").style.display    = step === "resetCode" ? "" : "none";
+      document.getElementById("forgotPasswordLink").style.display = (step === "login") ? "" : "none";
     }
 
     document.getElementById("tabLogin").addEventListener("click", () => {
@@ -7178,6 +7214,29 @@ if(finishToRated){
           showApp(data.username);
           await loadFromServer();
           renderEverything();
+        } else if (authMode === "forgot") {
+          const email = document.getElementById("authForgotEmail").value.trim();
+          await apiFetch("/api/forgot-password", {
+            method: "POST", body: JSON.stringify({ email })
+          });
+          authMode = "resetCode";
+          document.getElementById("authResetEmailHint").textContent = email;
+          showAuthStep("resetCode");
+          _authSubmit.textContent = "Сменить пароль";
+          document.getElementById("authResetCode").focus();
+
+        } else if (authMode === "resetCode") {
+          const email    = document.getElementById("authForgotEmail").value.trim();
+          const code     = document.getElementById("authResetCode").value.trim();
+          const password = document.getElementById("authNewPassword").value;
+          await apiFetch("/api/reset-password", {
+            method: "POST", body: JSON.stringify({ email, code, password })
+          });
+          authMode = "login";
+          showAuthStep("login");
+          _authSubmit.textContent = "Войти";
+          authSetError("");
+          document.getElementById("authEmail").value = email;
         }
       } catch(e) {
         authSetError(e.message);
@@ -7190,9 +7249,17 @@ if(finishToRated){
     });
 
     // Enter key
-    ["authEmail","authPassword","authRegEmail","authRegUsername","authRegPassword","authCode"].forEach(id => {
+    ["authEmail","authPassword","authRegEmail","authRegUsername","authRegPassword","authCode","authForgotEmail","authResetCode","authNewPassword"].forEach(id => {
       const el = document.getElementById(id);
       if(el) el.addEventListener("keydown", (e) => { if(e.key === "Enter") _authSubmit.click(); });
+    });
+
+    document.getElementById("forgotPasswordLink").addEventListener("click", () => {
+      authMode = "forgot";
+      showAuthStep("forgot");
+      _authSubmit.textContent = "Отправить код";
+      authSetError("");
+      document.getElementById("authForgotEmail").focus();
     });
 
     document.getElementById("logoutBtn").addEventListener("click", async () => {

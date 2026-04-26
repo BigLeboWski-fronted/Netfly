@@ -237,7 +237,7 @@ app.post("/api/tg/webapp-login", async (req, res) => {
 
   console.log("hash from client:", hash);
   console.log("expected hash:", expectedHash);
-  console.log("token used:", JSON.stringify(process.env.TG_TOKEN));
+  console.log("raw initData:", initData.substring(0, 200));
 
   if (expectedHash !== hash) return res.status(403).json({ error: "Invalid initData" });
 
@@ -297,6 +297,66 @@ app.get("/api/tg/profile", async (req, res) => {
     fav_director: profile.favDirectorName || null,
     fav_actor: profile.favActorName || null,
   });
+});
+
+// ── Password reset ────────────────────────────────────────────────────────────
+
+app.post("/api/forgot-password", async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: "Введи email" });
+
+  try {
+    const { rows } = await pool.query("SELECT id FROM users WHERE email=$1", [email.toLowerCase()]);
+    // Always respond OK to avoid email enumeration
+    if (!rows.length) return res.json({ ok: true });
+
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    await pool.query("UPDATE verification_codes SET used=TRUE WHERE email=$1", [email.toLowerCase()]);
+    await pool.query(
+      "INSERT INTO verification_codes (email, code, expires_at) VALUES ($1, $2, $3)",
+      [email.toLowerCase(), code, expiresAt]
+    );
+
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: "Netfly — сброс пароля",
+      html: `<p>Код для сброса пароля: <b style="font-size:24px">${code}</b></p><p>Действителен 10 минут.</p>`,
+    });
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Ошибка отправки письма" });
+  }
+});
+
+app.post("/api/reset-password", async (req, res) => {
+  const { email, code, password } = req.body;
+  if (!email || !code || !password) return res.status(400).json({ error: "Заполни все поля" });
+  if (password.length < 6) return res.status(400).json({ error: "Пароль минимум 6 символов" });
+
+  try {
+    const { rows } = await pool.query(
+      `SELECT * FROM verification_codes
+       WHERE email=$1 AND code=$2 AND used=FALSE AND expires_at > NOW()
+       ORDER BY id DESC LIMIT 1`,
+      [email.toLowerCase(), code.trim()]
+    );
+    if (!rows.length) return res.status(400).json({ error: "Неверный или истёкший код" });
+
+    await pool.query("UPDATE verification_codes SET used=TRUE WHERE id=$1", [rows[0].id]);
+
+    const hash = await bcrypt.hash(password, 10);
+    await pool.query("UPDATE users SET password_hash=$1 WHERE email=$2", [hash, email.toLowerCase()]);
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Ошибка сервера" });
+  }
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────
