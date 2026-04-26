@@ -838,44 +838,22 @@ details[open] .itemBody{
 .posterMeta{ min-width: 240px; flex:1; }
 
 @media (max-width: 680px){
+  /* Row 1: logo left, controls right — no wrapping */
   .topbarInner{
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
   }
-  /* logo + right controls stay on row 1 */
-  .brandMini { order: 1; }
-  .profileWrap { order: 2; margin-left: auto; }
-  .userBadge { order: 2; }
-  /* nav drops to full-width row 2 */
   .nav{
-    order: 3;
-    width: 100%;
-    justify-content: flex-start;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 4px;
-    scrollbar-width: none;
+    display: none; /* hidden inside topbar on mobile */
   }
-  .nav::-webkit-scrollbar { display: none; }
-  .navBtn{
-    padding: 8px 10px;
-    font-size: 12px;
-    white-space: nowrap;
-    flex-shrink: 0;
+  /* Row 2: nav bar below topbar */
+  .mobileNav{
+    display: flex !important;
   }
-  .wrap{
-    margin: 10px auto 20px;
-  }
-  .card{
-    padding: 12px;
-  }
-  .homeTitle{
-    font-size: 34px;
-  }
-  .listTop{
-    flex-direction: column;
-    align-items: flex-start;
-  }
+  .wrap{ margin: 10px auto 20px; }
+  .card{ padding: 12px; }
+  .homeTitle{ font-size: 34px; }
+  .listTop{ flex-direction: column; align-items: flex-start; }
 }
 
 /* Quick actions */
@@ -2277,6 +2255,25 @@ body::before{
   .wishSegment, .orderPill { font-size: 11px; padding: 4px 8px; }
   .itemHead { flex-wrap: wrap; }
 }
+/* Mobile nav bar (below topbar, mobile only) */
+.mobileNav{
+  display: none;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  background: rgba(0,0,0,.78);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  padding: 0 10px 2px;
+  gap: 0;
+}
+.mobileNav::-webkit-scrollbar { display: none; }
+.mobileNav .navBtn{
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: 12px;
+  padding: 10px 10px;
+}
 </style>
 </head>
 <body>
@@ -2299,6 +2296,7 @@ body::before{
       </div>
       </div>
     </div>
+  <nav class="mobileNav" id="mobileNav" aria-label="Навигация"></nav>
   </div>
 
   <div class="wrap">
@@ -3497,6 +3495,8 @@ function loadProfile(){
     // ========= Navigation =========
     function renderNav(){
       els.nav.innerHTML = "";
+      const mobileNav = document.getElementById("mobileNav");
+      if (mobileNav) mobileNav.innerHTML = "";
       VIEWS.forEach(v => {
         const b = document.createElement("button");
         b.type = "button";
@@ -3504,6 +3504,11 @@ function loadProfile(){
         b.textContent = v.label;
         b.addEventListener("click", () => goTo(v.id));
         els.nav.appendChild(b);
+        if (mobileNav) {
+          const b2 = b.cloneNode(true);
+          b2.addEventListener("click", () => goTo(v.id));
+          mobileNav.appendChild(b2);
+        }
       });
     }
 
