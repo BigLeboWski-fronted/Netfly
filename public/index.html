@@ -4212,7 +4212,41 @@ function loadProfile(){
       changeBtn.textContent = "Сменить";
       changeBtn.addEventListener("click", () => openPicker(isSeries ? "series" : "movie"));
 
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "dangerMini";
+      removeBtn.textContent = "Удалить";
+      removeBtn.addEventListener("click", () => {
+        if(isSeries) profile.favSeriesId = null;
+        else profile.favMovieId = null;
+        saveProfile();
+        syncToServer();
+        renderFavMovieCard(mode);
+      });
+
       btns.appendChild(changeBtn);
+      btns.appendChild(removeBtn);
+
+      // Fill empty space: genres + plot
+      const genres = movie.omdb?.genre || movie.tmdb?.genres?.map(g=>g.name).join(", ") || "";
+      const plot = movie.omdb?.plot || movie.tmdb?.overview || "";
+      if(genres || plot){
+        const extra = document.createElement("div");
+        extra.style.cssText = "margin-top:8px;display:flex;flex-direction:column;gap:6px;";
+        if(genres){
+          const g = document.createElement("div");
+          g.style.cssText = "font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.3px;text-transform:uppercase;";
+          g.textContent = genres;
+          extra.appendChild(g);
+        }
+        if(plot){
+          const p = document.createElement("div");
+          p.style.cssText = "font-size:12px;color:var(--muted);line-height:1.5;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;";
+          p.textContent = plot;
+          extra.appendChild(p);
+        }
+        meta.appendChild(extra);
+      }
 
       meta.appendChild(name);
       meta.appendChild(sub);
