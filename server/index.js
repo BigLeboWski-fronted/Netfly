@@ -534,6 +534,177 @@ app.post("/api/reset-password", async (req, res) => {
   }
 });
 
+// ── Account settings ──────────────────────────────────────────────────────────
+
+const COOLDOWN_DAYS = 3;
+function cooldownError(changedAt) {
+  if (!changedAt) return null;
+  const diff = Date.now() - new Date(changedAt).getTime();
+  const daysLeft = Math.ceil((COOLDOWN_DAYS * 86400000 - diff) / 86400000);
+  return daysLeft > 0 ? `Изменить можно раз в ${COOLDOWN_DAYS} дня. Осталось ${daysLeft} дн.` : null;
+}
+
+app.post("/api/account/change-username", requireAuth, async (req, res) => {
+  const { username } = req.body;
+  if (!username || username.trim().length < 3)
+    return res.status(400).json({ error: "Имя минимум 3 символа" });
+
+  try {
+    const { rows } = await pool.query(
+      "SELECT username_changed_at FROM users WHERE id=$1", [req.userId]
+    );
+    const err = cooldownError(rows[0]?.username_changed_at);
+    if (err) return res.status(429).json({ error: err });
+
+    await pool.query(
+      "UPDATE users SET username=$1, username_changed_at=NOW() WHERE id=$2",
+      [username.trim(), req.userId]
+    );
+    res.json({ ok: true });
+  } catch (e) {
+    if (e.code === "23505") return res.status(409).json({ error: "Имя уже занято" });
+    console.error(e);
+    res.status(500).json({ error: "Ошибка сервера" });
+  }
+});
+
+// Step 1: send code to current email
+app.post("/api/account/change-email/send-code", requireAuth, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      "SELECT email, email_changed_at FROM users WHERE id=$1", [req.userId]
+    );
+    const user = rows[0];
+    const err = cooldownError(user?.email_changed_at);
+    if (err) return res.status(429).json({ error: err });
+
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    await pool.query("UPDATE verification_codes SET used=TRUE WHERE email=$1", [user.email]);
+    await pool.query(
+      "INSERT INTO verification_codes (email, code, expires_at) VALUES ($1,$2,$3)",
+      [user.email, code, expiresAt]
+    );
+
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: user.email,
+      subject: "Netfly — смена почты",
+      html: `<p>Код подтверждения смены почты: <b style="font-size:24px">${code}</b></p><p>Действителен 10 минут.</p>`,
+    });
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Ошибка отправки письма" });
+  }
+});
+
+// Step 2: verify code + set new email
+app.post("/api/account/change-email", requireAuth, async (req, res) => {
+  const { code, newEmail } = req.body;
+  if (!code || !newEmail) return res.status(400).json({ error: "Заполни все поля" });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail))
+    return res.status(400).json({ error: "Некорректный email" });
+
+  try {
+    const { rows: userRows } = await pool.query(
+      "SELECT email FROM users WHERE id=$1", [req.userId]
+    );
+    const currentEmail = userRows[0]?.email;
+
+    const { rows } = await pool.query(
+      `SELECT * FROM verification_codes
+       WHERE email=$1 AND code=$2 AND used=FALSE AND expires_at > NOW()
+       ORDER BY id DESC LIMIT 1`,
+      [currentEmail, code.trim()]
+    );
+    if (!rows.length) return res.status(400).json({ error: "Неверный или истёкший код" });
+
+    await pool.query("UPDATE verification_codes SET used=TRUE WHERE id=$1", [rows[0].id]);
+    await pool.query(
+      "UPDATE users SET email=$1, email_changed_at=NOW() WHERE id=$2",
+      [newEmail.toLowerCase(), req.userId]
+    );
+    res.json({ ok: true });
+  } catch (e) {
+    if (e.code === "23505") return res.status(409).json({ error: "Email уже занят" });
+    console.error(e);
+    res.status(500).json({ error: "Ошибка сервера" });
+  }
+});
+
+app.post("/api/account/change-password", requireAuth, async (req, res) => {
+  const { currentPassword, code, newPassword } = req.body;
+  if (!newPassword || newPassword.length < 6)
+    return res.status(400).json({ error: "Пароль минимум 6 символов" });
+  if (!currentPassword && !code)
+    return res.status(400).json({ error: "Введи текущий пароль или код с почты" });
+
+  try {
+    const { rows } = await pool.query(
+      "SELECT email, password_hash, password_changed_at FROM users WHERE id=$1", [req.userId]
+    );
+    const user = rows[0];
+    const err = cooldownError(user?.password_changed_at);
+    if (err) return res.status(429).json({ error: err });
+
+    if (currentPassword) {
+      const ok = await bcrypt.compare(currentPassword, user.password_hash);
+      if (!ok) return res.status(401).json({ error: "Неверный текущий пароль" });
+    } else {
+      const { rows: codeRows } = await pool.query(
+        `SELECT * FROM verification_codes
+         WHERE email=$1 AND code=$2 AND used=FALSE AND expires_at > NOW()
+         ORDER BY id DESC LIMIT 1`,
+        [user.email, code.trim()]
+      );
+      if (!codeRows.length) return res.status(400).json({ error: "Неверный или истёкший код" });
+      await pool.query("UPDATE verification_codes SET used=TRUE WHERE id=$1", [codeRows[0].id]);
+    }
+
+    const hash = await bcrypt.hash(newPassword, 10);
+    await pool.query(
+      "UPDATE users SET password_hash=$1, password_changed_at=NOW() WHERE id=$2",
+      [hash, req.userId]
+    );
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Ошибка сервера" });
+  }
+});
+
+// Send code to current email for password reset (when user forgot current password)
+app.post("/api/account/send-password-code", requireAuth, async (req, res) => {
+  try {
+    const { rows } = await pool.query("SELECT email FROM users WHERE id=$1", [req.userId]);
+    const email = rows[0]?.email;
+
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    await pool.query("UPDATE verification_codes SET used=TRUE WHERE email=$1", [email]);
+    await pool.query(
+      "INSERT INTO verification_codes (email, code, expires_at) VALUES ($1,$2,$3)",
+      [email, code, expiresAt]
+    );
+
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: "Netfly — смена пароля",
+      html: `<p>Код для смены пароля: <b style="font-size:24px">${code}</b></p><p>Действителен 10 минут.</p>`,
+    });
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Ошибка отправки письма" });
+  }
+});
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 
 const PORT = process.env.PORT || 3000;

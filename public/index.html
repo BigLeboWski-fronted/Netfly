@@ -2789,6 +2789,30 @@ body::before{
         <div class="settingsGroup">
           <div class="settingsRow">
             <div class="settingsRowLabel">
+              <strong>Имя пользователя</strong>
+              <span id="accUsernameHint">Можно менять раз в 3 дня</span>
+            </div>
+            <button class="primary" style="font-size:13px;padding:8px 14px;" onclick="openChangeUsername()">Изменить</button>
+          </div>
+          <div class="settingsRow">
+            <div class="settingsRowLabel">
+              <strong>Email</strong>
+              <span id="accEmailHint">Можно менять раз в 3 дня</span>
+            </div>
+            <button class="primary" style="font-size:13px;padding:8px 14px;" onclick="openChangeEmail()">Изменить</button>
+          </div>
+          <div class="settingsRow">
+            <div class="settingsRowLabel">
+              <strong>Пароль</strong>
+              <span id="accPasswordHint">Можно менять раз в 3 дня</span>
+            </div>
+            <button class="primary" style="font-size:13px;padding:8px 14px;" onclick="openChangePassword()">Изменить</button>
+          </div>
+        </div>
+
+        <div class="settingsGroup">
+          <div class="settingsRow">
+            <div class="settingsRowLabel">
               <strong>Telegram</strong>
               <span id="tgStatusText">Не привязан</span>
             </div>
@@ -8149,6 +8173,126 @@ if(finishToRated){
     iframe.src = '';
   });
 
+  // ── Account settings ────────────────────────────────────────────────────────
+
+  function openAccModal(id) {
+    document.getElementById(id).classList.add('show');
+    document.getElementById(id).setAttribute('aria-hidden', 'false');
+  }
+  function closeAccModal(id) {
+    document.getElementById(id).classList.remove('show');
+    document.getElementById(id).setAttribute('aria-hidden', 'true');
+  }
+
+  function openChangeUsername() {
+    document.getElementById('accNewUsername').value = '';
+    openAccModal('modalChangeUsername');
+    document.getElementById('accNewUsername').focus();
+  }
+
+  async function submitChangeUsername() {
+    const username = document.getElementById('accNewUsername').value.trim();
+    const btn = document.getElementById('accUsernameBtn');
+    btn.disabled = true;
+    try {
+      await apiFetch('/api/account/change-username', {
+        method: 'POST', body: JSON.stringify({ username })
+      });
+      closeAccModal('modalChangeUsername');
+      toast('Имя изменено', username);
+    } catch (e) {
+      toast('Ошибка', e.message);
+    } finally { btn.disabled = false; }
+  }
+
+  function openChangeEmail() {
+    document.getElementById('accEmailStep1').style.display = 'flex';
+    document.getElementById('accEmailStep2').style.display = 'none';
+    document.getElementById('accEmailCode').value = '';
+    document.getElementById('accNewEmail').value = '';
+    openAccModal('modalChangeEmail');
+  }
+
+  async function sendEmailCode() {
+    const btn = document.getElementById('accEmailSendBtn');
+    btn.disabled = true;
+    try {
+      await apiFetch('/api/account/change-email/send-code', { method: 'POST' });
+      document.getElementById('accEmailStep1').style.display = 'none';
+      document.getElementById('accEmailStep2').style.display = 'flex';
+      document.getElementById('accEmailCode').focus();
+    } catch (e) {
+      toast('Ошибка', e.message);
+      btn.disabled = false;
+    }
+  }
+
+  async function submitChangeEmail() {
+    const code = document.getElementById('accEmailCode').value.trim();
+    const newEmail = document.getElementById('accNewEmail').value.trim();
+    const btn = document.getElementById('accEmailConfirmBtn');
+    btn.disabled = true;
+    try {
+      await apiFetch('/api/account/change-email', {
+        method: 'POST', body: JSON.stringify({ code, newEmail })
+      });
+      closeAccModal('modalChangeEmail');
+      toast('Email изменён', newEmail);
+    } catch (e) {
+      toast('Ошибка', e.message);
+      btn.disabled = false;
+    }
+  }
+
+  function openChangePassword() {
+    document.getElementById('accCurrentPassword').value = '';
+    document.getElementById('accPasswordCode').value = '';
+    document.getElementById('accNewPassword').value = '';
+    document.getElementById('accPwdCurrentBlock').style.display = 'flex';
+    document.getElementById('accPwdCodeBlock').style.display = 'none';
+    openAccModal('modalChangePassword');
+    document.getElementById('accCurrentPassword').focus();
+  }
+
+  async function switchToPasswordCode() {
+    const btn = document.querySelector('#accPwdCurrentBlock button');
+    btn.disabled = true;
+    try {
+      await apiFetch('/api/account/send-password-code', { method: 'POST' });
+      document.getElementById('accPwdCodeSentMsg').textContent = 'Код отправлен на твою почту';
+      document.getElementById('accPwdCurrentBlock').style.display = 'none';
+      document.getElementById('accPwdCodeBlock').style.display = 'flex';
+      document.getElementById('accPasswordCode').focus();
+    } catch (e) {
+      toast('Ошибка', e.message);
+      btn.disabled = false;
+    }
+  }
+
+  function switchToPasswordCurrent() {
+    document.getElementById('accPwdCodeBlock').style.display = 'none';
+    document.getElementById('accPwdCurrentBlock').style.display = 'flex';
+    document.querySelector('#accPwdCurrentBlock button').disabled = false;
+  }
+
+  async function submitChangePassword() {
+    const useCode = document.getElementById('accPwdCodeBlock').style.display !== 'none';
+    const currentPassword = useCode ? undefined : document.getElementById('accCurrentPassword').value;
+    const code = useCode ? document.getElementById('accPasswordCode').value.trim() : undefined;
+    const newPassword = document.getElementById('accNewPassword').value;
+    const btn = document.getElementById('accPasswordBtn');
+    btn.disabled = true;
+    try {
+      await apiFetch('/api/account/change-password', {
+        method: 'POST', body: JSON.stringify({ currentPassword, code, newPassword })
+      });
+      closeAccModal('modalChangePassword');
+      toast('Пароль изменён');
+    } catch (e) {
+      toast('Ошибка', e.message);
+    } finally { btn.disabled = false; }
+  }
+
   </script>
 
   <datalist id="reasonSuggestions">
@@ -8167,6 +8311,63 @@ if(finishToRated){
   <div class="cropBox">
     <h3>Обрезать фото</h3>
   </div><!-- /.wrap -->
+<!-- Account modals -->
+<div class="modal" id="modalChangeUsername" aria-hidden="true">
+  <div class="modalBackdrop" onclick="closeAccModal('modalChangeUsername')"></div>
+  <div class="modalCard" role="dialog" aria-modal="true" style="max-width:360px;">
+    <div class="modalHead">
+      <div class="modalTitle">Изменить имя</div>
+      <button class="iconBtn dangerMini" type="button" onclick="closeAccModal('modalChangeUsername')">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <input id="accNewUsername" type="text" placeholder="Новое имя" maxlength="32" />
+      <button class="primary" id="accUsernameBtn" onclick="submitChangeUsername()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modalChangeEmail" aria-hidden="true">
+  <div class="modalBackdrop" onclick="closeAccModal('modalChangeEmail')"></div>
+  <div class="modalCard" role="dialog" aria-modal="true" style="max-width:360px;">
+    <div class="modalHead">
+      <div class="modalTitle">Изменить email</div>
+      <button class="iconBtn dangerMini" type="button" onclick="closeAccModal('modalChangeEmail')">✕</button>
+    </div>
+    <div id="accEmailStep1" style="display:flex;flex-direction:column;gap:12px;">
+      <p style="font-size:13px;color:var(--muted);margin:0;">Отправим код на твою текущую почту</p>
+      <button class="primary" id="accEmailSendBtn" onclick="sendEmailCode()">Отправить код</button>
+    </div>
+    <div id="accEmailStep2" style="display:none;flex-direction:column;gap:12px;">
+      <input id="accEmailCode" type="text" placeholder="Код из письма" maxlength="6" inputmode="numeric" />
+      <input id="accNewEmail" type="email" placeholder="Новый email" />
+      <button class="primary" id="accEmailConfirmBtn" onclick="submitChangeEmail()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modalChangePassword" aria-hidden="true">
+  <div class="modalBackdrop" onclick="closeAccModal('modalChangePassword')"></div>
+  <div class="modalCard" role="dialog" aria-modal="true" style="max-width:360px;">
+    <div class="modalHead">
+      <div class="modalTitle">Изменить пароль</div>
+      <button class="iconBtn dangerMini" type="button" onclick="closeAccModal('modalChangePassword')">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div id="accPwdCurrentBlock" style="display:flex;flex-direction:column;gap:8px;">
+        <input id="accCurrentPassword" type="password" placeholder="Текущий пароль" />
+        <button type="button" style="font-size:12px;color:var(--accent);background:none;border:none;cursor:pointer;text-align:left;padding:0;" onclick="switchToPasswordCode()">Забыл пароль — прислать код на почту</button>
+      </div>
+      <div id="accPwdCodeBlock" style="display:none;flex-direction:column;gap:8px;">
+        <p style="font-size:13px;color:var(--muted);margin:0;" id="accPwdCodeSentMsg"></p>
+        <input id="accPasswordCode" type="text" placeholder="Код из письма" maxlength="6" inputmode="numeric" />
+        <button type="button" style="font-size:12px;color:var(--accent);background:none;border:none;cursor:pointer;text-align:left;padding:0;" onclick="switchToPasswordCurrent()">← Ввести текущий пароль</button>
+      </div>
+      <input id="accNewPassword" type="password" placeholder="Новый пароль (мин. 6 символов)" />
+      <button class="primary" id="accPasswordBtn" onclick="submitChangePassword()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
 

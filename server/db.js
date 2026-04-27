@@ -48,6 +48,13 @@ async function migrate() {
     );
   `);
 
+  // Account change cooldown columns
+  await pool.query(`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS username_changed_at TIMESTAMPTZ;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS email_changed_at TIMESTAMPTZ;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS password_changed_at TIMESTAMPTZ;
+  `);
+
   // Indexes
   await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_verification_codes_email ON verification_codes(email);
