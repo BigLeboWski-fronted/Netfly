@@ -7367,6 +7367,7 @@ if(finishToRated){
           });
           showApp(data.username);
           await loadFromServer();
+          applyAvatar(profile.avatar || null);
           renderEverything();
 
         } else if (authMode === "register") {
@@ -7393,6 +7394,7 @@ if(finishToRated){
           });
           showApp(data.username);
           await loadFromServer();
+          applyAvatar(profile.avatar || null);
           renderEverything();
         } else if (authMode === "forgot") {
           const email = document.getElementById("authForgotEmail").value.trim();
@@ -7542,20 +7544,16 @@ if(finishToRated){
     canvas.width = canvas.height = 256;
     const ctx = canvas.getContext("2d");
     ctx.beginPath(); ctx.arc(128,128,128,0,Math.PI*2); ctx.clip();
-    const img = new Image();
-    img.onload = () => {
-      const nat = img.naturalWidth / img.naturalHeight;
-      const bw = size * _cropScale, bh = bw / nat;
-      const scale = 256 / size;
-      ctx.drawImage(img, _cropX * scale, _cropY * scale, bw * scale, bh * scale);
-      const result = canvas.toDataURL("image/jpeg", 0.88);
-      profile.avatar = result;
-      saveProfile(profile);
-      applyAvatar(result);
-      cropModal.classList.add("hidden");
-      toast("Аватар обновлён");
-    };
-    img.src = _cropSrc;
+    const nat = cropImg.naturalWidth / cropImg.naturalHeight;
+    const bw = size * _cropScale, bh = bw / nat;
+    const scale = 256 / size;
+    ctx.drawImage(cropImg, _cropX * scale, _cropY * scale, bw * scale, bh * scale);
+    const result = canvas.toDataURL("image/jpeg", 0.88);
+    profile.avatar = result;
+    saveProfile(profile);
+    applyAvatar(result);
+    cropModal.classList.add("hidden");
+    toast("Аватар обновлён");
   });
 
   document.getElementById("avatarFileInput")?.addEventListener("change", function(){
