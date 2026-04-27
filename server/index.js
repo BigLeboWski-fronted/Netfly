@@ -414,10 +414,6 @@ app.post("/api/tg/webapp-login", async (req, res) => {
   const secretKey = crypto.createHmac("sha256", "WebAppData").update(process.env.TG_TOKEN).digest();
   const expectedHash = crypto.createHmac("sha256", secretKey).update(dataCheckString).digest("hex");
 
-  console.log("hash from client:", hash);
-  console.log("expected hash:", expectedHash);
-  console.log("raw initData:", initData.substring(0, 200));
-
   if (expectedHash !== hash) return res.status(403).json({ error: "Invalid initData" });
 
   const user = JSON.parse(params.get("user") || "{}");

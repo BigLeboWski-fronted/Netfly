@@ -48,6 +48,13 @@ async function migrate() {
     );
   `);
 
+  // Indexes
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_verification_codes_email ON verification_codes(email);
+    CREATE INDEX IF NOT EXISTS idx_link_codes_code ON link_codes(code);
+    CREATE INDEX IF NOT EXISTS idx_telegram_links_telegram_id ON telegram_links(telegram_id);
+  `);
+
   // Safe migrations for existing tables
   await pool.query(`
     ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT;
