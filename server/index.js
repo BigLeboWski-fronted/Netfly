@@ -166,7 +166,7 @@ app.put("/api/data", requireAuth, async (req, res) => {
 
 // ── OMDB proxy ────────────────────────────────────────────────────────────────
 
-app.get("/api/omdb", async (req, res) => {
+app.get("/api/omdb", requireAuth, async (req, res) => {
   const params = new URLSearchParams({ ...req.query, apikey: process.env.OMDB_API_KEY });
   try {
     const r = await fetch(`https://www.omdbapi.com/?${params}`);
