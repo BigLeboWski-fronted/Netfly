@@ -1602,6 +1602,92 @@ body.cinemaNight .topbar{
   background: rgba(0,0,0,.92);
 }
 
+/* ===== Settings gear button ===== */
+.settingsBtn{
+  background:none;
+  border:none;
+  cursor:pointer;
+  color:var(--muted);
+  padding:6px;
+  border-radius:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:color .2s, background .2s;
+  flex-shrink:0;
+}
+.settingsBtn:hover{ color:#fff; background:rgba(255,255,255,.08); }
+.settingsBtn svg{ transition:transform .5s cubic-bezier(.4,0,.2,1); }
+.settingsBtn:hover svg{ transform:rotate(60deg); }
+
+/* ===== Settings panel ===== */
+.settingsOverlay{
+  position:fixed;
+  inset:0;
+  z-index:300;
+  background:rgba(0,0,0,.45);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .25s;
+}
+.settingsOverlay.open{
+  opacity:1;
+  pointer-events:all;
+}
+.settingsPanel{
+  position:fixed;
+  bottom:0;
+  left:50%;
+  transform:translateX(-50%) translateY(100%);
+  width:min(420px, 100vw);
+  background:#18181b;
+  border-radius:20px 20px 0 0;
+  border-top:1px solid rgba(255,255,255,.08);
+  z-index:301;
+  padding:0 0 32px;
+  transition:transform .32s cubic-bezier(.4,0,.2,1);
+  box-shadow:0 -8px 40px rgba(0,0,0,.6);
+}
+.settingsPanel.open{
+  transform:translateX(-50%) translateY(0);
+}
+.settingsPanelHandle{
+  width:36px;
+  height:4px;
+  background:rgba(255,255,255,.15);
+  border-radius:4px;
+  margin:12px auto 20px;
+}
+.settingsPanelTitle{
+  font-size:13px;
+  font-weight:700;
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  padding:0 20px 12px;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.settingsRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:16px 20px;
+}
+.settingsRowLabel{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.settingsRowLabel strong{
+  font-size:14px;
+  font-weight:600;
+  color:#fff;
+}
+.settingsRowLabel span{
+  font-size:12px;
+  color:var(--muted);
+}
+
 /* ===== Cinema Night toggle ===== */
 .cnToggleWrap{
   display:flex;
@@ -2338,6 +2424,11 @@ body::before{
       <div class="nav" id="nav"></div>
 
       <div class="profileWrap">
+        <button class="settingsBtn" id="settingsBtn" type="button" title="Настройки" aria-label="Настройки">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
         <button class="profileBtn" id="profileBtn" type="button" title="Профиль"><svg class="profileIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
   <path d="M20 21a8 8 0 0 0-16 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
   <path d="M12 13a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -2351,6 +2442,23 @@ body::before{
       </div>
     </div>
   <nav class="mobileNav" id="mobileNav" aria-label="Навигация"></nav>
+
+  <!-- Settings panel -->
+  <div class="settingsOverlay" id="settingsOverlay"></div>
+  <div class="settingsPanel" id="settingsPanel" role="dialog" aria-label="Настройки">
+    <div class="settingsPanelHandle"></div>
+    <div class="settingsPanelTitle">Настройки</div>
+    <div class="settingsRow">
+      <div class="settingsRowLabel">
+        <strong>Киноночь</strong>
+        <span>Тёплый приглушённый режим</span>
+      </div>
+      <label class="cnSwitch">
+        <input id="cinemaNightToggle" type="checkbox" />
+        <span class="cnSlider"></span>
+      </label>
+    </div>
+  </div>
   </div>
 
   <div class="wrap">
@@ -2630,22 +2738,6 @@ body::before{
             <div class="profileSubtitle" id="profileSubtitle">Твоя личная библиотека фильмов и сериалов</div>
           </div>
         </div>
-
-        <div class="profileSection" style="margin-top:10px;">
-  <div class="secHead">
-    <h3>Внешний вид</h3>
-    <div class="small">Атмосферный режим</div>
-  </div>
-  <div class="inline">
-    <div class="cnToggleWrap">
-      <label class="cnSwitch">
-        <input id="cinemaNightToggle" type="checkbox" />
-        <span class="cnSlider"></span>
-      </label>
-      <span>Киноночь</span>
-    </div>
-  </div>
-</div>
 
         <div class="statTiles" id="profileTiles"></div>
 
@@ -7325,6 +7417,21 @@ if(finishToRated){
       toast(cn.checked ? "Киноночь включена" : "Киноночь выключена");
     });
   }
+
+  // Settings panel
+  const settingsBtn     = document.getElementById("settingsBtn");
+  const settingsOverlay = document.getElementById("settingsOverlay");
+  const settingsPanel   = document.getElementById("settingsPanel");
+  function openSettings(){
+    settingsOverlay.classList.add("open");
+    settingsPanel.classList.add("open");
+  }
+  function closeSettings(){
+    settingsOverlay.classList.remove("open");
+    settingsPanel.classList.remove("open");
+  }
+  settingsBtn?.addEventListener("click", openSettings);
+  settingsOverlay?.addEventListener("click", closeSettings);
 
   checkSession();
 }
