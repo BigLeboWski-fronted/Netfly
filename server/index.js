@@ -177,6 +177,41 @@ app.get("/api/omdb", requireAuth, async (req, res) => {
   }
 });
 
+// ── YouTube API proxy ─────────────────────────────────────────────────────────
+
+app.get("/api/youtube/search", requireAuth, async (req, res) => {
+  const { q } = req.query;
+  if (!q) return res.status(400).json({ error: "Query required" });
+  
+  const params = new URLSearchParams({
+    part: "snippet",
+    q: q + " русский трейлер",
+    type: "video",
+    maxResults: "5",
+    key: process.env.YOUTUBE_API_KEY,
+    regionCode: "RU",
+    relevanceLanguage: "ru"
+  });
+
+  try {
+    const r = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`);
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error?.message || "YouTube API error");
+    
+    const results = (data.items || []).map(item => ({
+      videoId: item.id.videoId,
+      title: item.snippet.title,
+      thumbnail: item.snippet.thumbnails.medium.url,
+      channelTitle: item.snippet.channelTitle
+    }));
+    
+    res.json({ results });
+  } catch (e) {
+    console.error("YouTube API error:", e);
+    res.status(500).json({ error: "YouTube API error" });
+  }
+});
+
 // ── Telegram integration ──────────────────────────────────────────────────────
 
 const TG_SECRET = process.env.TG_SECRET;

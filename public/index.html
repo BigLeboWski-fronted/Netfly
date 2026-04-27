@@ -2870,6 +2870,30 @@ body::before{
       </div>
     </div>
 
+  <!-- Trailer modal -->
+  <div class="modal" id="trailerModal" aria-hidden="true">
+    <div class="modalBackdrop" data-close-trailer="1"></div>
+    <div class="modalCard" role="dialog" aria-modal="true" aria-label="Трейлер" style="max-width:900px;">
+      <div class="modalHead">
+        <div class="modalTitle">🎬 Трейлер</div>
+        <button class="iconBtn dangerMini" id="trailerCloseBtn" type="button" title="Закрыть">✕</button>
+      </div>
+      
+      <div id="trailerPlayer" style="display:none;">
+        <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:8px;background:#000;">
+          <iframe id="trailerIframe" style="position:absolute;top:0;left:0;width:100%;height:100%;" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+        <button id="trailerChangeBtn" type="button" style="margin-top:12px;font-size:13px;">Выбрать другой</button>
+      </div>
+
+      <div id="trailerSearch">
+        <div class="small" style="margin-bottom:8px;color:var(--muted);">Поиск трейлера на YouTube</div>
+        <button id="trailerAutoSearchBtn" class="primary" type="button">🔍 Найти автоматически</button>
+        <div id="trailerResults" style="margin-top:16px;"></div>
+      </div>
+    </div>
+  </div>
+
 
   <!-- Auth screen -->
   <div id="authScreen">
@@ -5747,6 +5771,15 @@ document.addEventListener("click", (e) => {
         const actionsRow = document.createElement("div");
         actionsRow.className = "actionsRow";
 
+        const trailerBtn = document.createElement("button");
+        trailerBtn.className = "primary";
+        trailerBtn.type = "button";
+        trailerBtn.textContent = movie.trailerYoutubeId ? "🎬 Смотреть трейлер" : "🎬 Добавить трейлер";
+        trailerBtn.addEventListener("click", (e) => {
+          e.preventDefault(); e.stopPropagation();
+          openTrailerModal(movie);
+        });
+
         const delBtn = document.createElement("button");
         delBtn.className = "danger";
         delBtn.type = "button";
@@ -5756,6 +5789,7 @@ document.addEventListener("click", (e) => {
           deleteMovieConfirm(movie.id, details);
         });
 
+        actionsRow.appendChild(trailerBtn);
         actionsRow.appendChild(delBtn);
 
         body.appendChild(posterWrap);
@@ -7657,6 +7691,116 @@ if(finishToRated){
     }
     btn.disabled = false;
   }
+
+  // ── Trailer modal ─────────────────────────────────────────────────────────────
+
+  let currentTrailerMovie = null;
+
+  function openTrailerModal(movie) {
+    currentTrailerMovie = movie;
+    const modal = document.getElementById('trailerModal');
+    const player = document.getElementById('trailerPlayer');
+    const search = document.getElementById('trailerSearch');
+    const iframe = document.getElementById('trailerIframe');
+    const results = document.getElementById('trailerResults');
+    
+    results.innerHTML = '';
+    
+    if (movie.trailerYoutubeId) {
+      player.style.display = 'block';
+      search.style.display = 'none';
+      iframe.src = `https://www.youtube.com/embed/${movie.trailerYoutubeId}?autoplay=1`;
+    } else {
+      player.style.display = 'none';
+      search.style.display = 'block';
+      iframe.src = '';
+    }
+    
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeTrailerModal() {
+    const modal = document.getElementById('trailerModal');
+    const iframe = document.getElementById('trailerIframe');
+    iframe.src = '';
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden', 'true');
+    currentTrailerMovie = null;
+  }
+
+  async function searchTrailers(query) {
+    const results = document.getElementById('trailerResults');
+    results.innerHTML = '<div class="small" style="color:var(--muted);">Поиск...</div>';
+    
+    try {
+      const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(query)}`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      
+      results.innerHTML = '';
+      
+      if (!data.results || data.results.length === 0) {
+        results.innerHTML = '<div class="small" style="color:var(--muted);">Ничего не найдено</div>';
+        return;
+      }
+      
+      data.results.forEach(video => {
+        const item = document.createElement('div');
+        item.style.cssText = 'display:flex;gap:12px;padding:10px;background:var(--card);border-radius:8px;margin-bottom:8px;cursor:pointer;';
+        item.innerHTML = `
+          <img src="${video.thumbnail}" style="width:120px;height:90px;object-fit:cover;border-radius:4px;" />
+          <div style="flex:1;">
+            <div style="font-weight:600;margin-bottom:4px;">${escapeHtml(video.title)}</div>
+            <div class="small" style="color:var(--muted);">${escapeHtml(video.channelTitle)}</div>
+          </div>
+        `;
+        item.addEventListener('click', () => selectTrailer(video.videoId));
+        results.appendChild(item);
+      });
+    } catch (e) {
+      results.innerHTML = '<div class="small" style="color:var(--muted);">Ошибка поиска</div>';
+    }
+  }
+
+  function selectTrailer(videoId) {
+    if (!currentTrailerMovie) return;
+    
+    currentTrailerMovie.trailerYoutubeId = videoId;
+    saveMovies();
+    
+    const player = document.getElementById('trailerPlayer');
+    const search = document.getElementById('trailerSearch');
+    const iframe = document.getElementById('trailerIframe');
+    
+    player.style.display = 'block';
+    search.style.display = 'none';
+    iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+    
+    renderRated();
+  }
+
+  document.getElementById('trailerCloseBtn')?.addEventListener('click', closeTrailerModal);
+  document.querySelector('[data-close-trailer]')?.addEventListener('click', (e) => {
+    if (e.target?.dataset?.closeTrailer) closeTrailerModal();
+  });
+
+  document.getElementById('trailerAutoSearchBtn')?.addEventListener('click', () => {
+    if (currentTrailerMovie) {
+      const query = currentTrailerMovie.name + (currentTrailerMovie.year ? ` ${currentTrailerMovie.year}` : '');
+      searchTrailers(query);
+    }
+  });
+
+  document.getElementById('trailerChangeBtn')?.addEventListener('click', () => {
+    const player = document.getElementById('trailerPlayer');
+    const search = document.getElementById('trailerSearch');
+    const iframe = document.getElementById('trailerIframe');
+    
+    player.style.display = 'none';
+    search.style.display = 'block';
+    iframe.src = '';
+  });
 
   </script>
 
