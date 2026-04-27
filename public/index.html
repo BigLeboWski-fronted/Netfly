@@ -1018,17 +1018,17 @@ body.muteAnim details.item .itemBody{
 .profilePage{ padding: 16px; }
 .profileLayout{
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 300px 1fr;
   gap: 16px;
   align-items: start;
 }
-.profileLeft{ display: flex; flex-direction: column; gap: 0; }
-.profileRight{ display: flex; flex-direction: column; gap: 0; }
+.profileLeft{ display: flex; flex-direction: column; gap: 0; min-width: 0; }
+.profileRight{ display: flex; flex-direction: column; gap: 0; min-width: 0; }
 @media (max-width: 860px){
   .profileLayout{ grid-template-columns: 1fr; }
 }
-.profileLeft .statTiles{ grid-template-columns: repeat(2, 1fr); }
-.profileLeft .favGrid{ grid-template-columns: repeat(2, 1fr); }
+.profileLeft .statTiles{ grid-template-columns: repeat(2, 1fr) !important; }
+.profileLeft .favGrid{ grid-template-columns: repeat(2, 1fr) !important; }
 .profileHero{
   display:flex;
   align-items:center;
