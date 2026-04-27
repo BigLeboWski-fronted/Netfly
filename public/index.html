@@ -4812,8 +4812,9 @@ function loadProfile(){
         const similar = (movie.similar?.results || []).slice(0, 6);
         
         container.innerHTML = `
-          <div style="position:relative;min-height:400px;overflow:hidden;${backdrop ? `background:url(${backdrop});background-size:cover;background-position:center top;` : 'background:var(--bg2);'}">
-            ${backdrop ? '<div style="position:absolute;inset:0;background:rgba(0,0,0,.65);"></div>' : ''}
+          <div style="position:relative;min-height:400px;overflow:hidden;">
+            ${backdrop ? `<div style="position:absolute;inset:0;background:url(${backdrop});background-size:cover;background-position:center top;filter:blur(15px);transform:scale(1.1);"></div>` : ''}
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,.7);"></div>
             <div style="position:relative;max-width:1200px;margin:0 auto;padding:40px 20px;display:flex;gap:30px;flex-wrap:wrap;">
               ${poster ? `<img src="${poster}" style="width:300px;border-radius:12px;box-shadow:var(--shadow);" />` : ''}
               <div style="flex:1;min-width:300px;">
