@@ -52,6 +52,7 @@ async function migrate() {
   await pool.query(`
     ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS verified BOOLEAN NOT NULL DEFAULT FALSE;
+    ALTER TABLE telegram_links ADD COLUMN IF NOT EXISTS telegram_username TEXT;
   `);
   // Fill email from username for old rows, then make unique+not null
   await pool.query(`UPDATE users SET email = username WHERE email IS NULL;`);

@@ -193,11 +193,21 @@ app.post("/api/tg/gen-code", requireAuth, async (req, res) => {
   res.json({ code });
 });
 
+// Get linked Telegram info (called from site, requires auth)
+app.get("/api/tg/linked", requireAuth, async (req, res) => {
+  const { rows } = await pool.query(
+    "SELECT telegram_id, telegram_username FROM telegram_links WHERE user_id=$1",
+    [req.userId]
+  );
+  if (!rows.length) return res.json({ linked: false });
+  res.json({ linked: true, telegram_id: rows[0].telegram_id, telegram_username: rows[0].telegram_username });
+});
+
 // Verify link code + bind telegram_id (called from bot)
 app.post("/api/tg/verify-link", async (req, res) => {
   if (req.headers["x-tg-secret"] !== TG_SECRET)
     return res.status(403).json({ error: "Forbidden" });
-  const { code, telegram_id } = req.body;
+  const { code, telegram_id, telegram_username } = req.body;
   if (!code || !telegram_id) return res.status(400).json({ error: "Bad request" });
 
   const { rows } = await pool.query(
@@ -208,9 +218,9 @@ app.post("/api/tg/verify-link", async (req, res) => {
 
   await pool.query("UPDATE link_codes SET used=TRUE WHERE id=$1", [rows[0].id]);
   await pool.query(
-    `INSERT INTO telegram_links (telegram_id, user_id) VALUES ($1,$2)
-     ON CONFLICT (telegram_id) DO UPDATE SET user_id=$2, linked_at=NOW()`,
-    [telegram_id, rows[0].user_id]
+    `INSERT INTO telegram_links (telegram_id, user_id, telegram_username) VALUES ($1,$2,$3)
+     ON CONFLICT (telegram_id) DO UPDATE SET user_id=$2, telegram_username=$3, linked_at=NOW()`,
+    [telegram_id, rows[0].user_id, telegram_username || null]
   );
   const user = await pool.query("SELECT username FROM users WHERE id=$1", [rows[0].user_id]);
   res.json({ ok: true, username: user.rows[0].username });

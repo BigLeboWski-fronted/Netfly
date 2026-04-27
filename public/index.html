@@ -2748,6 +2748,19 @@ body::before{
             </label>
           </div>
         </div>
+
+        <div class="settingsGroup">
+          <div class="secHead"><h3>Telegram</h3></div>
+          <div id="tgLinkedInfo" style="display:none;padding:12px;background:var(--card);border-radius:8px;margin-bottom:12px;">
+            <div style="font-size:13px;color:var(--muted);margin-bottom:4px;">Привязан аккаунт:</div>
+            <div id="tgUsername" style="font-size:15px;font-weight:600;"></div>
+          </div>
+          <button class="primary" id="tgGenCodeBtn" onclick="tgGenCode()">🔗 Привязать Telegram</button>
+          <div id="tgCodeDisplay" style="display:none;margin-top:10px;">
+            <div style="font-size:13px;color:var(--muted);margin-bottom:6px;">Введи этот код в боте командой <b>/link КОД</b>. Действителен 10 минут.</div>
+            <div id="tgCode" style="font-size:32px;font-weight:900;letter-spacing:6px;"></div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -2830,12 +2843,6 @@ body::before{
         </div>
 
         <div class="profileSection" style="margin-top:10px;">
-          <div class="secHead"><h3>Telegram</h3></div>
-          <button class="primary" id="tgGenCodeBtn" onclick="tgGenCode()">🔗 Привязать Telegram</button>
-          <div id="tgCodeDisplay" style="display:none;margin-top:10px;">
-            <div style="font-size:13px;color:var(--muted);margin-bottom:6px;">Введи этот код в боте командой <b>/link КОД</b>. Действителен 10 минут.</div>
-            <div id="tgCode" style="font-size:32px;font-weight:900;letter-spacing:6px;"></div>
-          </div>
         </div>
 
         <datalist id="directorDatalist"></datalist>
@@ -3740,6 +3747,7 @@ function loadProfile(){
       if(viewId === "wish") renderWish();
       if(viewId === "now") renderNow();
       if(viewId === "profile") renderProfile();
+      if(viewId === "settings") loadTelegramInfo();
     }
     
     
@@ -7604,6 +7612,31 @@ if(finishToRated){
   }
 
   init();
+
+  async function loadTelegramInfo() {
+    try {
+      const res = await fetch('/api/tg/linked');
+      if (!res.ok) return;
+      const data = await res.json();
+      const infoDiv = document.getElementById('tgLinkedInfo');
+      const usernameDiv = document.getElementById('tgUsername');
+      const btn = document.getElementById('tgGenCodeBtn');
+      
+      if (data.linked) {
+        const displayName = data.telegram_username 
+          ? `@${data.telegram_username}` 
+          : `ID: ${data.telegram_id}`;
+        usernameDiv.textContent = displayName;
+        infoDiv.style.display = 'block';
+        btn.textContent = '🔄 Перепривязать';
+      } else {
+        infoDiv.style.display = 'none';
+        btn.textContent = '🔗 Привязать Telegram';
+      }
+    } catch (e) {
+      console.error('Failed to load Telegram info:', e);
+    }
+  }
 
   async function tgGenCode() {
     const btn = document.getElementById('tgGenCodeBtn');
