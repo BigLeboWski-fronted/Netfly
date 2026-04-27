@@ -3871,11 +3871,6 @@ function loadProfile(){
       el.appendChild(th);
       el.appendChild(txt);
 
-      el.addEventListener("click", () => {
-        closePicker();
-        goTo("rated", { openId: movie.id });
-      });
-
       return el;
     }
 
@@ -4525,7 +4520,11 @@ function loadProfile(){
         e.textContent = "Пока пусто.";
         els.bestList.appendChild(e);
       } else {
-        best.forEach(m => els.bestList.appendChild(makeMiniItem(m)));
+        best.forEach(m => {
+          const item = makeMiniItem(m);
+          item.addEventListener("click", () => goTo("rated", { openId: m.id }));
+          els.bestList.appendChild(item);
+        });
       }
 
       if(!recent.length){
@@ -4535,7 +4534,11 @@ function loadProfile(){
         e.textContent = "Пока пусто.";
         els.recentRatedList.appendChild(e);
       } else {
-        recent.forEach(m => els.recentRatedList.appendChild(makeMiniItem(m)));
+        recent.forEach(m => {
+          const item = makeMiniItem(m);
+          item.addEventListener("click", () => goTo("rated", { openId: m.id }));
+          els.recentRatedList.appendChild(item);
+        });
       }
     }
 
