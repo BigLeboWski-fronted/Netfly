@@ -4818,7 +4818,7 @@ function loadProfile(){
         const similar = (movie.similar?.results || []).slice(0, 6);
         
         container.innerHTML = `
-          <div style="position:relative;min-height:400px;${backdrop ? `background:linear-gradient(rgba(0,0,0,.7),rgba(11,11,12,1)),url(${backdrop});background-size:cover;background-position:center;` : 'background:var(--bg2);'}">
+          <div style="position:relative;min-height:400px;${backdrop ? `background:linear-gradient(rgba(0,0,0,.7),transparent),url(${backdrop});background-size:cover;background-position:center;` : 'background:var(--bg2);'}">
             <div style="max-width:1200px;margin:0 auto;padding:40px 20px;display:flex;gap:30px;flex-wrap:wrap;">
               ${poster ? `<img src="${poster}" style="width:300px;border-radius:12px;box-shadow:var(--shadow);" />` : ''}
               <div style="flex:1;min-width:300px;">
@@ -4899,15 +4899,17 @@ function loadProfile(){
           
           // Store TMDB data for later use
           window._tmdbData = {
-            id: tmdbId,
-            type,
-            title,
-            year,
-            poster: poster,
-            genres: movie.genres,
-            overview,
-            director: director ? director.name : '',
-            cast: cast.map(a => a.name).join(', ')
+            tmdbId: tmdbId,
+            mediaType: type,
+            posterUrl: poster,
+            backdropUrl: backdrop,
+            imdbID: movie.external_ids?.imdb_id || null,
+            type: type === 'tv' ? 'series' : 'movie',
+            genre: genres,
+            runtime: runtime ? `${runtime} min` : null,
+            imdbRating: rating,
+            actors: cast.map(a => a.name),
+            plot: overview
           };
           
           goTo('evaluate');
@@ -5468,8 +5470,8 @@ document.addEventListener("click", (e) => {
         createdAt: Date.now(),
         scores: { ...current },
         favorite: false,
-        queueOrder: status === "wish" ? getNextWishOrder(getWishKindForMovie({ omdb: omdbMetaDraft })) : null,
-        omdb: omdbMetaDraft ? { ...omdbMetaDraft } : null,
+        queueOrder: status === "wish" ? getNextWishOrder(getWishKindForMovie({ omdb: omdbMetaDraft || window._tmdbData })) : null,
+        omdb: omdbMetaDraft || window._tmdbData || null,
       };
 
       movies.push(movie);
@@ -5486,6 +5488,7 @@ document.addEventListener("click", (e) => {
       els.tags.value = "";
       els.notes.value = "";
       omdbMetaDraft = null;
+      window._tmdbData = null;
       els.omdbStatus.textContent = "";
       hideResults();
 
