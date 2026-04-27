@@ -1016,6 +1016,19 @@ body.muteAnim details.item .itemBody{
 
 /* ===== Profile (dashboard) ===== */
 .profilePage{ padding: 16px; }
+.profileLayout{
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+.profileLeft{ display: flex; flex-direction: column; gap: 0; }
+.profileRight{ display: flex; flex-direction: column; gap: 0; }
+@media (max-width: 860px){
+  .profileLayout{ grid-template-columns: 1fr; }
+}
+.profileLeft .statTiles{ grid-template-columns: repeat(2, 1fr); }
+.profileLeft .favGrid{ grid-template-columns: repeat(2, 1fr); }
 .profileHero{
   display:flex;
   align-items:center;
@@ -2830,82 +2843,85 @@ body::before{
 
     <section id="view-profile" class="hidden view">
       <section class="card profilePage">
-        <div class="profileHero">
-          <div class="avatarCircle" id="profileAvatar" aria-hidden="true">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-              <path d="M20 21a8 8 0 0 0-16 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              <path d="M12 13a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </div>
-          <div>
-            <h2 class="profileTitle">Мой профиль</h2>
-            <div class="profileSubtitle" id="profileSubtitle">Твоя личная библиотека фильмов и сериалов</div>
-          </div>
-        </div>
+        <!-- Two-column layout -->
+        <div class="profileLayout">
 
-        <div class="statTiles" id="profileTiles"></div>
-
-        <div class="profileSection" id="profileScores"></div>
-
-
-        <div class="profileSection" id="profileWatchingWeek"></div>
-
-
-
-        <div class="profileSection">
-          <div class="secHead">
-            <h3>Мой вкус</h3>
-            <div class="small">Любимые жанры по твоей библиотеке</div>
-          </div>
-          <div class="genreChips" id="profileGenreChips"></div>
-        </div>
-
-        
-        <div class="profileSection">
-          <div class="secHead">
-            <h3>Персонализация</h3>
-            <div class="small">Сделай профиль своим</div>
-          </div>
-
-          <div class="fieldRow">
-            <label class="small" for="profileTagline">Фраза профиля</label>
-            <input id="profileTagline" type="text" maxlength="80" placeholder="Например: Люблю медленные драмы и сильные финалы" />
-            <div class="small muted">Покажем её под заголовком профиля.</div>
-          </div>
-
-          <div style="margin-top:10px;">
-            <div class="small">Любимые жанры вручную (до 2)</div>
-            <div class="genreChips" id="profileManualGenreChips"></div>
-            <div class="small muted" style="margin-top:6px;">Выбери из жанров, которые есть в твоей библиотеке.</div>
-          </div>
-        </div>
-
-<div class="favGrid" id="profileFavGrid">
-          <div class="favCard" id="favMovieCard"></div>
-          <div class="favCard" id="favSeriesCard"></div>
-          <div class="favCard" id="favDirectorCard"></div>
-          <div class="favCard" id="favActorCard"></div>
-        </div>
-
-        <div class="twoCol">
-          <div class="profileSection">
-            <div class="secHead">
-              <h3>Лучшие по оценке</h3>
-              <div class="small">Топ‑3</div>
+          <!-- LEFT: identity card -->
+          <div class="profileLeft">
+            <div class="profileHero">
+              <div class="avatarCircle" id="profileAvatar" aria-hidden="true">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+                  <path d="M20 21a8 8 0 0 0-16 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M12 13a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div>
+                <h2 class="profileTitle">Мой профиль</h2>
+                <div class="profileSubtitle" id="profileSubtitle">Твоя личная библиотека фильмов и сериалов</div>
+              </div>
             </div>
-            <div class="miniList" id="bestList"></div>
-          </div>
-          <div class="profileSection">
-            <div class="secHead">
-              <h3>Недавно оценённые</h3>
-              <div class="small">Последние 3</div>
-            </div>
-            <div class="miniList" id="recentRatedList"></div>
-          </div>
-        </div>
 
-        <div class="profileSection" style="margin-top:10px;">
-        </div>
+            <div class="statTiles" id="profileTiles"></div>
+
+            <div class="profileSection">
+              <div class="secHead">
+                <h3>Мой вкус</h3>
+                <div class="small">Любимые жанры</div>
+              </div>
+              <div class="genreChips" id="profileGenreChips"></div>
+            </div>
+
+            <div class="favGrid" id="profileFavGrid">
+              <div class="favCard" id="favMovieCard"></div>
+              <div class="favCard" id="favSeriesCard"></div>
+              <div class="favCard" id="favDirectorCard"></div>
+              <div class="favCard" id="favActorCard"></div>
+            </div>
+          </div>
+
+          <!-- RIGHT: activity & details -->
+          <div class="profileRight">
+            <div class="profileSection" id="profileScores"></div>
+            <div class="profileSection" id="profileWatchingWeek"></div>
+
+            <div class="profileSection">
+              <div class="secHead">
+                <h3>Персонализация</h3>
+                <div class="small">Сделай профиль своим</div>
+              </div>
+              <div class="fieldRow">
+                <label class="small" for="profileTagline">Фраза профиля</label>
+                <input id="profileTagline" type="text" maxlength="80" placeholder="Например: Люблю медленные драмы и сильные финалы" />
+                <div class="small muted">Покажем её под заголовком профиля.</div>
+              </div>
+              <div style="margin-top:10px;">
+                <div class="small">Любимые жанры вручную (до 2)</div>
+                <div class="genreChips" id="profileManualGenreChips"></div>
+                <div class="small muted" style="margin-top:6px;">Выбери из жанров, которые есть в твоей библиотеке.</div>
+              </div>
+            </div>
+
+            <div class="twoCol">
+              <div class="profileSection">
+                <div class="secHead">
+                  <h3>Лучшие по оценке</h3>
+                  <div class="small">Топ‑3</div>
+                </div>
+                <div class="miniList" id="bestList"></div>
+              </div>
+              <div class="profileSection">
+                <div class="secHead">
+                  <h3>Недавно оценённые</h3>
+                  <div class="small">Последние 3</div>
+                </div>
+                <div class="miniList" id="recentRatedList"></div>
+              </div>
+            </div>
+
+            <div class="profileSection" style="margin-top:10px;"></div>
+          </div>
+
+        </div><!-- /.profileLayout -->
 
         <datalist id="directorDatalist"></datalist>
         <datalist id="actorDatalist"></datalist>
