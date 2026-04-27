@@ -3477,6 +3477,7 @@ function loadProfile(){
 
       out.tagline = String(src.tagline || "");
       out.manualGenres = Array.isArray(src.manualGenres) ? src.manualGenres.filter(Boolean).slice(0,2) : [];
+      out.avatar = src.avatar || null;
 
       return out;
     }
@@ -7245,7 +7246,10 @@ if(finishToRated){
           saveMovies();
         }
         if(data.profile && Object.keys(data.profile).length){
-          profile = { ...loadProfile(), ...data.profile };
+          const local = loadProfile();
+          profile = { ...local, ...data.profile };
+          // keep local avatar if server doesn't have one (base64 may not sync)
+          if(!profile.avatar && local.avatar) profile.avatar = local.avatar;
           saveProfile(profile);
         }
         if(data.now_state && Object.keys(data.now_state).length){
@@ -7492,10 +7496,12 @@ if(finishToRated){
 
   function openCropper(src){
     _cropSrc = src; _cropX = 0; _cropY = 0; _cropScale = 1;
-    cropImg.src = src;
     cropZoom.value = 1;
     cropModal.classList.remove("hidden");
     cropImg.onload = () => positionCropImg();
+    cropImg.src = src;
+    // if already cached, onload won't fire
+    if(cropImg.complete && cropImg.naturalWidth) positionCropImg();
   }
 
   function positionCropImg(){
