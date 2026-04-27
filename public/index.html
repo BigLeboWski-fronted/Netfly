@@ -4701,7 +4701,7 @@ function loadProfile(){
           card.addEventListener('mouseleave', () => card.style.transform = 'scale(1)');
           
           const poster = item.poster_path 
-            ? `https://image.tmdb.org/t/p/w300${item.poster_path}`
+            ? `/api/tmdb/image/w300${item.poster_path}`
             : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="450"%3E%3Crect fill="%23333" width="300" height="450"/%3E%3Ctext x="50%25" y="50%25" fill="%23999" text-anchor="middle" dy=".3em"%3ENo poster%3C/text%3E%3C/svg%3E';
           
           const title = item.title || item.name || 'Без названия';
@@ -4792,11 +4792,11 @@ function loadProfile(){
         const movie = await res.json();
         
         const backdrop = movie.backdrop_path 
-          ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}`
+          ? `/api/tmdb/image/original${movie.backdrop_path}`
           : null;
         
         const poster = movie.poster_path
-          ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+          ? `/api/tmdb/image/w500${movie.poster_path}`
           : null;
         
         const title = movie.title || movie.name || 'Без названия';
@@ -4850,7 +4850,7 @@ function loadProfile(){
               <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:16px;">
                 ${cast.map(actor => `
                   <div style="text-align:center;">
-                    ${actor.profile_path ? `<img src="https://image.tmdb.org/t/p/w185${actor.profile_path}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" style="width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:8px;margin-bottom:8px;" /><div style="display:none;width:100%;aspect-ratio:2/3;background:var(--card);border-radius:8px;margin-bottom:8px;align-items:center;justify-content:center;color:var(--muted);">No photo</div>` : '<div style="width:100%;aspect-ratio:2/3;background:var(--card);border-radius:8px;margin-bottom:8px;display:flex;align-items:center;justify-content:center;color:var(--muted);">No photo</div>'}
+                    ${actor.profile_path ? `<img src="/api/tmdb/image/w185${actor.profile_path}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" style="width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:8px;margin-bottom:8px;" /><div style="display:none;width:100%;aspect-ratio:2/3;background:var(--card);border-radius:8px;margin-bottom:8px;align-items:center;justify-content:center;color:var(--muted);">No photo</div>` : '<div style="width:100%;aspect-ratio:2/3;background:var(--card);border-radius:8px;margin-bottom:8px;display:flex;align-items:center;justify-content:center;color:var(--muted);">No photo</div>'}
                     <div style="font-size:13px;font-weight:600;">${escapeHtml(actor.name)}</div>
                     <div class="small" style="color:var(--muted);">${escapeHtml(actor.character || '')}</div>
                   </div>
@@ -4873,7 +4873,7 @@ function loadProfile(){
               <h3>Похожие</h3>
               <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;">
                 ${similar.map(s => {
-                  const sPoster = s.poster_path ? `https://image.tmdb.org/t/p/w300${s.poster_path}` : '';
+                  const sPoster = s.poster_path ? `/api/tmdb/image/w300${s.poster_path}` : '';
                   const sTitle = s.title || s.name || 'Без названия';
                   const sYear = (s.release_date || s.first_air_date || '').substring(0, 4);
                   return `

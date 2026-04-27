@@ -324,6 +324,28 @@ app.get("/api/tmdb/genres", requireAuth, async (req, res) => {
   }
 });
 
+// TMDB image proxy (to avoid CORS/403 issues)
+app.get("/api/tmdb/image/*", requireAuth, async (req, res) => {
+  const imagePath = req.params[0];
+  if (!imagePath) return res.status(400).send("Bad request");
+  
+  try {
+    const imageUrl = `https://image.tmdb.org/t/p/${imagePath}`;
+    const response = await fetch(imageUrl);
+    
+    if (!response.ok) throw new Error("Image fetch failed");
+    
+    const contentType = response.headers.get("content-type");
+    if (contentType) res.setHeader("Content-Type", contentType);
+    
+    const buffer = await response.arrayBuffer();
+    res.send(Buffer.from(buffer));
+  } catch (e) {
+    console.error("TMDB image proxy error:", e);
+    res.status(404).send("Image not found");
+  }
+});
+
 // ── Telegram integration ──────────────────────────────────────────────────────
 
 const TG_SECRET = process.env.TG_SECRET;
