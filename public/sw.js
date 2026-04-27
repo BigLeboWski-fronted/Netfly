@@ -1,4 +1,4 @@
-const CACHE = "netfly-v1";
+const CACHE = "netfly-v2";
 const STATIC = ["/", "/index.html", "/icon.svg", "/manifest.json"];
 
 self.addEventListener("install", e => {
