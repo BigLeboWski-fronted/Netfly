@@ -4089,18 +4089,6 @@ function loadProfile(){
       badge.textContent = formatFinalScore(final);
       scoreRow.appendChild(badge);
 
-      const openIcon = document.createElement("button");
-      openIcon.type = "button";
-      openIcon.className = "openRatedIcon";
-      openIcon.textContent = "▶";
-      openIcon.title = "Открыть в оценённых";
-      openIcon.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        goTo("rated", { openId: movie.id });
-      });
-      scoreRow.appendChild(openIcon);
-
       sub.appendChild(scoreRow);
 
       const btns = document.createElement("div");
