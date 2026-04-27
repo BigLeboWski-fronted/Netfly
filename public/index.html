@@ -1037,8 +1037,25 @@ body.muteAnim details.item .itemBody{
   place-items:center;
   box-shadow: 0 16px 34px rgba(0,0,0,.45);
   flex-shrink:0;
+  overflow:hidden;
+  cursor:default;
 }
 .avatarCircle svg{ width: 26px; height: 26px; opacity:.95; }
+.avatarCircle img{ width:100%; height:100%; object-fit:cover; border-radius:999px; }
+.avatarUploadBtn{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:10px;
+  color:#fff;
+  font-size:13px;
+  padding:9px 14px;
+  cursor:pointer;
+  transition:background .2s;
+}
+.avatarUploadBtn:hover{ background:rgba(255,255,255,.11); }
 .profileTitle{
   margin:0;
   font-size: 22px;
@@ -2657,6 +2674,28 @@ body::before{
 <!-- SETTINGS -->
     <section id="view-settings" class="hidden view">
       <div class="settingsView">
+      <div class="settingsGroup">
+          <div class="settingsRow">
+            <div class="settingsRowLabel">
+              <strong>Аватар</strong>
+              <span>Фото профиля</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div class="avatarCircle" id="settingsAvatar" style="width:40px;height:40px;box-shadow:none;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M20 21a8 8 0 0 0-16 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M12 13a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <label class="avatarUploadBtn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Загрузить
+                <input id="avatarFileInput" type="file" accept="image/*" style="display:none"/>
+              </label>
+            </div>
+          </div>
+        </div>
+
         <div class="settingsGroup">
           <div class="settingsRow">
             <div class="settingsRowLabel">
@@ -2677,7 +2716,7 @@ body::before{
     <section id="view-profile" class="hidden view">
       <section class="card profilePage">
         <div class="profileHero">
-          <div class="avatarCircle" aria-hidden="true">
+          <div class="avatarCircle" id="profileAvatar" aria-hidden="true">
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
               <path d="M20 21a8 8 0 0 0-16 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
               <path d="M12 13a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -4221,8 +4260,19 @@ function loadProfile(){
       if(st.count) card.appendChild(listWrap);
     }
 
+    function applyAvatar(src){
+      const avatarSvg = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M20 21a8 8 0 0 0-16 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M12 13a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
+      const smallSvg = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M20 21a8 8 0 0 0-16 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M12 13a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
+      const imgTag = src ? `<img src="${src}" alt="Аватар"/>` : null;
+      const el1 = document.getElementById("profileAvatar");
+      const el2 = document.getElementById("settingsAvatar");
+      if(el1) el1.innerHTML = imgTag || avatarSvg;
+      if(el2) el2.innerHTML = imgTag || smallSvg;
+    }
+
     function renderProfile(){
       ensureProfileDatalists();
+      applyAvatar(profile.avatar || null);
 
       // Personalization: tagline
       if(els.profileTagline){
@@ -7374,6 +7424,22 @@ if(finishToRated){
 
   // Settings button → navigate to settings view
   document.getElementById("settingsBtn")?.addEventListener("click", () => goTo("settings"));
+
+  // Avatar upload
+  applyAvatar(profile.avatar || null);
+  document.getElementById("avatarFileInput")?.addEventListener("change", function(){
+    const file = this.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      profile.avatar = e.target.result;
+      saveProfile(profile);
+      applyAvatar(profile.avatar);
+      toast("Аватар обновлён");
+    };
+    reader.readAsDataURL(file);
+    this.value = "";
+  });
 
   checkSession();
 }
