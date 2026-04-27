@@ -7718,6 +7718,11 @@ if(finishToRated){
     
     modal.classList.add('show');
     modal.setAttribute('aria-hidden', 'false');
+    
+    // Scroll to top
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   }
 
   function closeTrailerModal() {
