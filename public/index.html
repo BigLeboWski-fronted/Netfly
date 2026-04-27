@@ -5078,7 +5078,7 @@ function loadProfile(){
       const rated = movies
         .filter(m => (m.status || "watched") === "watched")
         .sort((a,b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
-        .slice(0,4);
+        .slice(0,3);
 
       if(rated.length === 0){
         els.recentWrap.innerHTML = `<div class="emptyNote">Пока нет оценённых — перейди в “Оценить” и добавь первый.</div>`;
