@@ -1022,12 +1022,14 @@ body.muteAnim details.item .itemBody{
   gap: 16px;
   align-items: start;
 }
-.profileLeft{ display: flex; flex-direction: column; gap: 0; min-width: 0; }
+.profileLeft{ display: flex; flex-direction: column; gap: 0; min-width: 0; overflow: hidden; }
+.profileLeft input{ min-width: 0; width: 100%; box-sizing: border-box; }
 .profileRight{ display: flex; flex-direction: column; gap: 0; min-width: 0; }
 @media (max-width: 860px){
   .profileLayout{ grid-template-columns: 1fr; }
 }
 .profileLeft .statTiles{ grid-template-columns: repeat(2, 1fr) !important; }
+.profileRight .favGrid{ grid-template-columns: repeat(2, 1fr) !important; }
 .profileHero{
   display:flex;
   align-items:center;
