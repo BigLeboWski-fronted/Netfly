@@ -4818,7 +4818,7 @@ function loadProfile(){
         const similar = (movie.similar?.results || []).slice(0, 6);
         
         container.innerHTML = `
-          <div style="position:relative;min-height:400px;${backdrop ? `background:linear-gradient(rgba(0,0,0,.7),transparent),url(${backdrop});background-size:cover;background-position:center;` : 'background:var(--bg2);'}">
+          <div style="position:relative;min-height:400px;${backdrop ? `background:linear-gradient(to bottom, rgba(0,0,0,.6) 0%, rgba(11,11,12,.95) 100%),url(${backdrop});background-size:cover;background-position:center top;` : 'background:var(--bg2);'}">
             <div style="max-width:1200px;margin:0 auto;padding:40px 20px;display:flex;gap:30px;flex-wrap:wrap;">
               ${poster ? `<img src="${poster}" style="width:300px;border-radius:12px;box-shadow:var(--shadow);" />` : ''}
               <div style="flex:1;min-width:300px;">
@@ -4897,8 +4897,8 @@ function loadProfile(){
           document.getElementById('year').value = year || '';
           document.getElementById('director').value = director ? director.name : '';
           
-          // Store TMDB data for later use
-          window._tmdbData = {
+          // Store TMDB data in omdbMetaDraft for compatibility
+          omdbMetaDraft = {
             tmdbId: tmdbId,
             mediaType: type,
             posterUrl: poster,
@@ -5470,8 +5470,8 @@ document.addEventListener("click", (e) => {
         createdAt: Date.now(),
         scores: { ...current },
         favorite: false,
-        queueOrder: status === "wish" ? getNextWishOrder(getWishKindForMovie({ omdb: omdbMetaDraft || window._tmdbData })) : null,
-        omdb: omdbMetaDraft || window._tmdbData || null,
+        queueOrder: status === "wish" ? getNextWishOrder(getWishKindForMovie({ omdb: omdbMetaDraft })) : null,
+        omdb: omdbMetaDraft ? { ...omdbMetaDraft } : null,
       };
 
       movies.push(movie);
@@ -5488,7 +5488,6 @@ document.addEventListener("click", (e) => {
       els.tags.value = "";
       els.notes.value = "";
       omdbMetaDraft = null;
-      window._tmdbData = null;
       els.omdbStatus.textContent = "";
       hideResults();
 
