@@ -1056,6 +1056,45 @@ body.muteAnim details.item .itemBody{
   transition:background .2s;
 }
 .avatarUploadBtn:hover{ background:rgba(255,255,255,.11); }
+
+/* ===== Avatar cropper modal ===== */
+.cropModal{
+  position:fixed; inset:0; z-index:500;
+  background:rgba(0,0,0,.75);
+  display:flex; align-items:center; justify-content:center;
+  padding:16px;
+}
+.cropModal.hidden{ display:none; }
+.cropBox{
+  background:#18181b;
+  border-radius:18px;
+  padding:20px;
+  display:flex; flex-direction:column; gap:14px;
+  width:min(360px,100%);
+}
+.cropBox h3{ margin:0; font-size:15px; font-weight:700; }
+.cropWrap{
+  position:relative;
+  width:100%; aspect-ratio:1;
+  background:#000;
+  border-radius:12px;
+  overflow:hidden;
+  cursor:move;
+  touch-action:none;
+}
+.cropWrap img{
+  position:absolute;
+  transform-origin:0 0;
+  user-select:none;
+  pointer-events:none;
+}
+.cropCircleOverlay{
+  position:absolute; inset:0;
+  background: radial-gradient(circle 45% at 50% 50%, transparent 44%, rgba(0,0,0,.65) 45%);
+  pointer-events:none;
+}
+.cropActions{ display:flex; gap:8px; }
+.cropActions button{ flex:1; }
 .profileTitle{
   margin:0;
   font-size: 22px;
@@ -4263,11 +4302,20 @@ function loadProfile(){
     function applyAvatar(src){
       const avatarSvg = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M20 21a8 8 0 0 0-16 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M12 13a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
       const smallSvg = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M20 21a8 8 0 0 0-16 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M12 13a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
+      const topbarSvg = `<svg class="profileIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M12 13a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
       const imgTag = src ? `<img src="${src}" alt="Аватар"/>` : null;
       const el1 = document.getElementById("profileAvatar");
       const el2 = document.getElementById("settingsAvatar");
+      const btn  = document.getElementById("profileBtn");
       if(el1) el1.innerHTML = imgTag || avatarSvg;
-      if(el2) el2.innerHTML = imgTag || smallSvg;
+      if(el2) el2.innerHTML = imgTag ? `<img src="${src}" alt="Аватар"/>` : smallSvg;
+      if(btn){
+        if(src){
+          btn.innerHTML = `<img src="${src}" alt="Аватар" style="width:100%;height:100%;object-fit:cover;border-radius:12px;"/>`;
+        } else {
+          btn.innerHTML = topbarSvg;
+        }
+      }
     }
 
     function renderProfile(){
@@ -7425,18 +7473,82 @@ if(finishToRated){
   // Settings button → navigate to settings view
   document.getElementById("settingsBtn")?.addEventListener("click", () => goTo("settings"));
 
-  // Avatar upload
+  // Avatar
   applyAvatar(profile.avatar || null);
+
+  // Cropper state
+  let _cropSrc = null, _cropX = 0, _cropY = 0, _cropScale = 1;
+  let _dragStart = null;
+
+  const cropModal = document.getElementById("cropModal");
+  const cropImg   = document.getElementById("cropImg");
+  const cropWrap  = document.getElementById("cropWrap");
+  const cropZoom  = document.getElementById("cropZoom");
+
+  function openCropper(src){
+    _cropSrc = src; _cropX = 0; _cropY = 0; _cropScale = 1;
+    cropImg.src = src;
+    cropZoom.value = 1;
+    cropModal.classList.remove("hidden");
+    cropImg.onload = () => positionCropImg();
+  }
+
+  function positionCropImg(){
+    const w = cropWrap.offsetWidth;
+    const nat = cropImg.naturalWidth / cropImg.naturalHeight;
+    const bw = w * _cropScale, bh = bw / nat;
+    cropImg.style.width  = bw + "px";
+    cropImg.style.height = bh + "px";
+    cropImg.style.left   = _cropX + "px";
+    cropImg.style.top    = _cropY + "px";
+  }
+
+  cropZoom.addEventListener("input", () => {
+    _cropScale = parseFloat(cropZoom.value);
+    positionCropImg();
+  });
+
+  // Drag to pan
+  cropWrap.addEventListener("pointerdown", e => {
+    _dragStart = { x: e.clientX - _cropX, y: e.clientY - _cropY };
+    cropWrap.setPointerCapture(e.pointerId);
+  });
+  cropWrap.addEventListener("pointermove", e => {
+    if(!_dragStart) return;
+    _cropX = e.clientX - _dragStart.x;
+    _cropY = e.clientY - _dragStart.y;
+    positionCropImg();
+  });
+  cropWrap.addEventListener("pointerup", () => { _dragStart = null; });
+
+  document.getElementById("cropCancel").addEventListener("click", () => {
+    cropModal.classList.add("hidden");
+  });
+
+  document.getElementById("cropApply").addEventListener("click", () => {
+    const size = cropWrap.offsetWidth;
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 256;
+    const ctx = canvas.getContext("2d");
+    ctx.beginPath(); ctx.arc(128,128,128,0,Math.PI*2); ctx.clip();
+    const img = new Image(); img.src = _cropSrc;
+    const nat = img.naturalWidth / img.naturalHeight;
+    const bw = size * _cropScale, bh = bw / nat;
+    const scale = 256 / size;
+    ctx.drawImage(img, _cropX * scale, _cropY * scale, bw * scale, bh * scale);
+    const result = canvas.toDataURL("image/jpeg", 0.88);
+    profile.avatar = result;
+    saveProfile(profile);
+    applyAvatar(result);
+    cropModal.classList.add("hidden");
+    toast("Аватар обновлён");
+  });
+
   document.getElementById("avatarFileInput")?.addEventListener("change", function(){
     const file = this.files[0];
     if(!file) return;
     const reader = new FileReader();
-    reader.onload = e => {
-      profile.avatar = e.target.result;
-      saveProfile(profile);
-      applyAvatar(profile.avatar);
-      toast("Аватар обновлён");
-    };
+    reader.onload = e => openCropper(e.target.result);
     reader.readAsDataURL(file);
     this.value = "";
   });
@@ -7505,6 +7617,21 @@ if(finishToRated){
 
   <div id="confettiLayer" class="confettiLayer" aria-hidden="true"></div>
   <div id="toastHost" class="toastHost"></div>
+<!-- Avatar cropper -->
+<div class="cropModal hidden" id="cropModal">
+  <div class="cropBox">
+    <h3>Обрезать фото</h3>
+    <div class="cropWrap" id="cropWrap">
+      <img id="cropImg" src="" alt="" draggable="false"/>
+      <div class="cropCircleOverlay"></div>
+    </div>
+    <input id="cropZoom" type="range" min="1" max="3" step="0.01" value="1" style="width:100%;accent-color:#c0392b;"/>
+    <div class="cropActions">
+      <button class="ghost" id="cropCancel" type="button">Отмена</button>
+      <button class="primary" id="cropApply" type="button">Применить</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
 
