@@ -1028,7 +1028,6 @@ body.muteAnim details.item .itemBody{
   .profileLayout{ grid-template-columns: 1fr; }
 }
 .profileLeft .statTiles{ grid-template-columns: repeat(2, 1fr) !important; }
-.profileLeft .favGrid{ grid-template-columns: repeat(2, 1fr) !important; }
 .profileHero{
   display:flex;
   align-items:center;
@@ -2871,19 +2870,6 @@ body::before{
               <div class="genreChips" id="profileGenreChips"></div>
             </div>
 
-            <div class="favGrid" id="profileFavGrid">
-              <div class="favCard" id="favMovieCard"></div>
-              <div class="favCard" id="favSeriesCard"></div>
-              <div class="favCard" id="favDirectorCard"></div>
-              <div class="favCard" id="favActorCard"></div>
-            </div>
-          </div>
-
-          <!-- RIGHT: activity & details -->
-          <div class="profileRight">
-            <div class="profileSection" id="profileScores"></div>
-            <div class="profileSection" id="profileWatchingWeek"></div>
-
             <div class="profileSection">
               <div class="secHead">
                 <h3>Персонализация</h3>
@@ -2899,6 +2885,19 @@ body::before{
                 <div class="genreChips" id="profileManualGenreChips"></div>
                 <div class="small muted" style="margin-top:6px;">Выбери из жанров, которые есть в твоей библиотеке.</div>
               </div>
+            </div>
+          </div>
+
+          <!-- RIGHT: activity & details -->
+          <div class="profileRight">
+            <div class="profileSection" id="profileScores"></div>
+            <div class="profileSection" id="profileWatchingWeek"></div>
+
+            <div class="favGrid" id="profileFavGrid">
+              <div class="favCard" id="favMovieCard"></div>
+              <div class="favCard" id="favSeriesCard"></div>
+              <div class="favCard" id="favDirectorCard"></div>
+              <div class="favCard" id="favActorCard"></div>
             </div>
 
             <div class="twoCol">
