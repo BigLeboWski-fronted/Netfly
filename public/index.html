@@ -2543,6 +2543,49 @@ body::before{
       </section>
     </section>
 
+    <!-- SEARCH (full width) -->
+    <section id="view-search" class="hidden view">
+      <section class="card">
+        <h2>🔍 Поиск фильмов и сериалов</h2>
+        
+        <div style="margin-bottom:16px;">
+          <input id="tmdbSearchInput" type="text" placeholder="Введите название..." style="margin-bottom:12px;" />
+          
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+            <select id="tmdbTypeFilter" style="flex:1;min-width:120px;">
+              <option value="">Все типы</option>
+              <option value="movie">Фильмы</option>
+              <option value="tv">Сериалы</option>
+            </select>
+            
+            <select id="tmdbGenreFilter" style="flex:1;min-width:120px;">
+              <option value="">Все жанры</option>
+            </select>
+            
+            <select id="tmdbYearFilter" style="flex:1;min-width:120px;">
+              <option value="">Все годы</option>
+            </select>
+            
+            <select id="tmdbSortFilter" style="flex:1;min-width:120px;">
+              <option value="popularity.desc">Популярные</option>
+              <option value="vote_average.desc">Высокий рейтинг</option>
+              <option value="release_date.desc">Новые</option>
+            </select>
+          </div>
+          
+          <button id="tmdbSearchBtn" class="primary" type="button">Искать</button>
+        </div>
+        
+        <div id="tmdbResults" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;"></div>
+        <div id="tmdbPagination" style="margin-top:16px;text-align:center;"></div>
+      </section>
+    </section>
+
+    <!-- MOVIE PAGE (full width) -->
+    <section id="view-movie" class="hidden view">
+      <div id="moviePageContent"></div>
+    </section>
+
     <!-- RATED (full width) -->
     <section id="view-rated" class="hidden view">
       <section class="card">
@@ -3012,7 +3055,7 @@ body::before{
     // Navigation tabs (id must match view section ids).
     const VIEWS = [
       { id:"home",     label:"Главная" },
-      { id:"evaluate", label:"Оценить" },
+      { id:"search",   label:"Поиск" },
       { id:"rated",    label:"Оценённые" },
       { id:"wish",    label:"Буду смотреть" },
       { id:"now",     label:"Смотрю сейчас" },
@@ -3047,6 +3090,8 @@ body::before{
       viewProfile: document.getElementById("view-profile"),
       viewNow: document.getElementById("view-now"),
       viewSettings: document.getElementById("view-settings"),
+      viewSearch: document.getElementById("view-search"),
+      viewMovie: document.getElementById("view-movie"),
 
 
       // profile (dashboard)
@@ -3748,6 +3793,8 @@ function loadProfile(){
       els.viewHome.classList.toggle("hidden", viewId !== "home");
       els.viewEval.classList.toggle("hidden", viewId !== "evaluate");
       els.viewRated.classList.toggle("hidden", viewId !== "rated");
+      els.viewSearch?.classList.toggle("hidden", viewId !== "search");
+      els.viewMovie?.classList.toggle("hidden", viewId !== "movie");
       if(els.viewNow) els.viewNow.classList.toggle("hidden", viewId !== "now");
       if(viewId === "wish"){
         els.viewWishMovies.classList.toggle("hidden", wishKindActive !== "movie");
@@ -3765,6 +3812,8 @@ function loadProfile(){
       renderNav();
 
       if(viewId === "home") renderHome();
+      if(viewId === "search") renderSearch();
+      if(viewId === "movie" && opts.tmdbId && opts.type) renderMoviePage(opts.tmdbId, opts.type);
       if(viewId === "rated"){
         renderRated();
         if(opts.openId) openRatedItem(opts.openId);
@@ -4572,6 +4621,301 @@ function loadProfile(){
           item.addEventListener("click", () => goTo("rated", { openId: m.id }));
           els.recentRatedList.appendChild(item);
         });
+      }
+    }
+
+    // ========= TMDB Search =========
+    let tmdbCurrentPage = 1;
+    let tmdbTotalPages = 1;
+    let tmdbGenres = [];
+
+    async function loadGenres() {
+      try {
+        const res = await fetch('/api/tmdb/genres?type=movie');
+        const data = await res.json();
+        tmdbGenres = data.genres || [];
+        
+        const select = document.getElementById('tmdbGenreFilter');
+        tmdbGenres.forEach(g => {
+          const opt = document.createElement('option');
+          opt.value = g.id;
+          opt.textContent = g.name;
+          select.appendChild(opt);
+        });
+        
+        // Years
+        const yearSelect = document.getElementById('tmdbYearFilter');
+        const currentYear = new Date().getFullYear();
+        for (let y = currentYear; y >= 1950; y--) {
+          const opt = document.createElement('option');
+          opt.value = y;
+          opt.textContent = y;
+          yearSelect.appendChild(opt);
+        }
+      } catch (e) {
+        console.error('Failed to load genres:', e);
+      }
+    }
+
+    function renderSearch() {
+      if (tmdbGenres.length === 0) loadGenres();
+      tmdbCurrentPage = 1;
+      performSearch();
+    }
+
+    async function performSearch() {
+      const query = document.getElementById('tmdbSearchInput').value.trim();
+      const type = document.getElementById('tmdbTypeFilter').value;
+      const genre = document.getElementById('tmdbGenreFilter').value;
+      const year = document.getElementById('tmdbYearFilter').value;
+      const sort = document.getElementById('tmdbSortFilter').value;
+      
+      const results = document.getElementById('tmdbResults');
+      results.innerHTML = '<div class="small" style="color:var(--muted);padding:20px;text-align:center;">Загрузка...</div>';
+      
+      try {
+        let url;
+        if (query) {
+          url = `/api/tmdb/search?query=${encodeURIComponent(query)}&page=${tmdbCurrentPage}`;
+        } else {
+          url = `/api/tmdb/discover?type=${type || 'movie'}&genre=${genre}&year=${year}&sort=${sort}&page=${tmdbCurrentPage}`;
+        }
+        
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        tmdbTotalPages = data.total_pages || 1;
+        const items = data.results || [];
+        
+        results.innerHTML = '';
+        
+        if (items.length === 0) {
+          results.innerHTML = '<div class="small" style="color:var(--muted);padding:20px;text-align:center;">Ничего не найдено</div>';
+          return;
+        }
+        
+        items.forEach(item => {
+          const card = document.createElement('div');
+          card.style.cssText = 'cursor:pointer;border-radius:8px;overflow:hidden;background:var(--card);transition:transform .2s;';
+          card.addEventListener('mouseenter', () => card.style.transform = 'scale(1.05)');
+          card.addEventListener('mouseleave', () => card.style.transform = 'scale(1)');
+          
+          const poster = item.poster_path 
+            ? `https://image.tmdb.org/t/p/w300${item.poster_path}`
+            : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="450"%3E%3Crect fill="%23333" width="300" height="450"/%3E%3Ctext x="50%25" y="50%25" fill="%23999" text-anchor="middle" dy=".3em"%3ENo poster%3C/text%3E%3C/svg%3E';
+          
+          const title = item.title || item.name || 'Без названия';
+          const year = (item.release_date || item.first_air_date || '').substring(0, 4);
+          const type = item.media_type || (item.title ? 'movie' : 'tv');
+          
+          card.innerHTML = `
+            <img src="${poster}" style="width:100%;aspect-ratio:2/3;object-fit:cover;" />
+            <div style="padding:8px;">
+              <div style="font-size:13px;font-weight:600;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(title)}">${escapeHtml(title)}</div>
+              <div class="small" style="color:var(--muted);">${year || '—'}</div>
+            </div>
+          `;
+          
+          card.addEventListener('click', () => {
+            goTo('movie', { tmdbId: item.id, type });
+          });
+          
+          results.appendChild(card);
+        });
+        
+        renderPagination();
+      } catch (e) {
+        console.error('Search error:', e);
+        results.innerHTML = '<div class="small" style="color:var(--muted);padding:20px;text-align:center;">Ошибка поиска</div>';
+      }
+    }
+
+    function renderPagination() {
+      const container = document.getElementById('tmdbPagination');
+      container.innerHTML = '';
+      
+      if (tmdbTotalPages <= 1) return;
+      
+      const prev = document.createElement('button');
+      prev.textContent = '← Назад';
+      prev.disabled = tmdbCurrentPage === 1;
+      prev.addEventListener('click', () => {
+        if (tmdbCurrentPage > 1) {
+          tmdbCurrentPage--;
+          performSearch();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      });
+      
+      const info = document.createElement('span');
+      info.textContent = ` Страница ${tmdbCurrentPage} из ${Math.min(tmdbTotalPages, 500)} `;
+      info.style.margin = '0 12px';
+      
+      const next = document.createElement('button');
+      next.textContent = 'Вперёд →';
+      next.disabled = tmdbCurrentPage >= tmdbTotalPages || tmdbCurrentPage >= 500;
+      next.addEventListener('click', () => {
+        if (tmdbCurrentPage < tmdbTotalPages && tmdbCurrentPage < 500) {
+          tmdbCurrentPage++;
+          performSearch();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      });
+      
+      container.appendChild(prev);
+      container.appendChild(info);
+      container.appendChild(next);
+    }
+
+    document.getElementById('tmdbSearchBtn')?.addEventListener('click', () => {
+      tmdbCurrentPage = 1;
+      performSearch();
+    });
+
+    document.getElementById('tmdbSearchInput')?.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        tmdbCurrentPage = 1;
+        performSearch();
+      }
+    });
+
+    // ========= Movie Page =========
+    async function renderMoviePage(tmdbId, type) {
+      const container = document.getElementById('moviePageContent');
+      container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);">Загрузка...</div>';
+      
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      try {
+        const endpoint = type === 'tv' ? `/api/tmdb/tv/${tmdbId}` : `/api/tmdb/movie/${tmdbId}`;
+        const res = await fetch(endpoint);
+        const movie = await res.json();
+        
+        const backdrop = movie.backdrop_path 
+          ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}`
+          : null;
+        
+        const poster = movie.poster_path
+          ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+          : null;
+        
+        const title = movie.title || movie.name || 'Без названия';
+        const originalTitle = movie.original_title || movie.original_name || '';
+        const year = (movie.release_date || movie.first_air_date || '').substring(0, 4);
+        const runtime = movie.runtime || (movie.episode_run_time && movie.episode_run_time[0]) || null;
+        const genres = (movie.genres || []).map(g => g.name).join(', ');
+        const overview = movie.overview || 'Описание отсутствует';
+        const rating = movie.vote_average ? movie.vote_average.toFixed(1) : '—';
+        const voteCount = movie.vote_count || 0;
+        const budget = movie.budget ? `$${(movie.budget / 1000000).toFixed(1)}M` : null;
+        const revenue = movie.revenue ? `$${(movie.revenue / 1000000).toFixed(1)}M` : null;
+        
+        const director = (movie.credits?.crew || []).find(c => c.job === 'Director');
+        const cast = (movie.credits?.cast || []).slice(0, 10);
+        
+        const trailer = (movie.videos?.results || []).find(v => v.type === 'Trailer' && v.site === 'YouTube');
+        
+        const similar = (movie.similar?.results || []).slice(0, 6);
+        
+        container.innerHTML = `
+          <div style="position:relative;min-height:400px;${backdrop ? `background:linear-gradient(rgba(0,0,0,.7),rgba(11,11,12,1)),url(${backdrop});background-size:cover;background-position:center;` : 'background:var(--bg2);'}">
+            <div style="max-width:1200px;margin:0 auto;padding:40px 20px;display:flex;gap:30px;flex-wrap:wrap;">
+              ${poster ? `<img src="${poster}" style="width:300px;border-radius:12px;box-shadow:var(--shadow);" />` : ''}
+              <div style="flex:1;min-width:300px;">
+                <h1 style="margin:0 0 8px;font-size:32px;">${escapeHtml(title)}</h1>
+                ${originalTitle !== title ? `<div style="color:var(--muted);margin-bottom:16px;">${escapeHtml(originalTitle)}</div>` : ''}
+                
+                <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
+                  ${year ? `<span class="tagPill">${year}</span>` : ''}
+                  ${runtime ? `<span class="tagPill">${runtime} мин</span>` : ''}
+                  <span class="tagPill">⭐ ${rating} (${voteCount})</span>
+                </div>
+                
+                <div style="margin-bottom:16px;color:var(--muted);">${escapeHtml(genres)}</div>
+                
+                <p style="line-height:1.6;margin-bottom:24px;">${escapeHtml(overview)}</p>
+                
+                ${director ? `<div style="margin-bottom:12px;"><strong>Режиссёр:</strong> ${escapeHtml(director.name)}</div>` : ''}
+                ${budget ? `<div style="margin-bottom:12px;"><strong>Бюджет:</strong> ${budget}</div>` : ''}
+                ${revenue ? `<div style="margin-bottom:12px;"><strong>Сборы:</strong> ${revenue}</div>` : ''}
+                
+                <button class="primary" id="rateMovieBtn" style="margin-top:20px;font-size:16px;padding:12px 24px;">⭐ Оценить фильм</button>
+              </div>
+            </div>
+          </div>
+          
+          ${cast.length ? `
+            <section class="card" style="max-width:1200px;margin:20px auto;">
+              <h3>Актёры</h3>
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:16px;">
+                ${cast.map(actor => `
+                  <div style="text-align:center;">
+                    ${actor.profile_path ? `<img src="https://image.tmdb.org/t/p/w185${actor.profile_path}" style="width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:8px;margin-bottom:8px;" />` : '<div style="width:100%;aspect-ratio:2/3;background:var(--card);border-radius:8px;margin-bottom:8px;display:flex;align-items:center;justify-content:center;color:var(--muted);">No photo</div>'}
+                    <div style="font-size:13px;font-weight:600;">${escapeHtml(actor.name)}</div>
+                    <div class="small" style="color:var(--muted);">${escapeHtml(actor.character || '')}</div>
+                  </div>
+                `).join('')}
+              </div>
+            </section>
+          ` : ''}
+          
+          ${trailer ? `
+            <section class="card" style="max-width:1200px;margin:20px auto;">
+              <h3>Трейлер</h3>
+              <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:8px;background:#000;">
+                <iframe src="https://www.youtube.com/embed/${trailer.key}" style="position:absolute;top:0;left:0;width:100%;height:100%;" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+              </div>
+            </section>
+          ` : ''}
+          
+          ${similar.length ? `
+            <section class="card" style="max-width:1200px;margin:20px auto;">
+              <h3>Похожие</h3>
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;">
+                ${similar.map(s => {
+                  const sPoster = s.poster_path ? `https://image.tmdb.org/t/p/w300${s.poster_path}` : '';
+                  const sTitle = s.title || s.name || 'Без названия';
+                  const sYear = (s.release_date || s.first_air_date || '').substring(0, 4);
+                  return `
+                    <div style="cursor:pointer;border-radius:8px;overflow:hidden;background:var(--card);" onclick="goTo('movie', { tmdbId: ${s.id}, type: '${s.media_type || type}' })">
+                      ${sPoster ? `<img src="${sPoster}" style="width:100%;aspect-ratio:2/3;object-fit:cover;" />` : '<div style="width:100%;aspect-ratio:2/3;background:var(--card2);display:flex;align-items:center;justify-content:center;color:var(--muted);">No poster</div>'}
+                      <div style="padding:8px;">
+                        <div style="font-size:13px;font-weight:600;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(sTitle)}">${escapeHtml(sTitle)}</div>
+                        <div class="small" style="color:var(--muted);">${sYear || '—'}</div>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </section>
+          ` : ''}
+        `;
+        
+        document.getElementById('rateMovieBtn')?.addEventListener('click', () => {
+          // Pre-fill evaluate form with TMDB data
+          document.getElementById('movieName').value = title;
+          document.getElementById('year').value = year || '';
+          document.getElementById('director').value = director ? director.name : '';
+          
+          // Store TMDB data for later use
+          window._tmdbData = {
+            id: tmdbId,
+            type,
+            title,
+            year,
+            poster: poster,
+            genres: movie.genres,
+            overview,
+            director: director ? director.name : '',
+            cast: cast.map(a => a.name).join(', ')
+          };
+          
+          goTo('evaluate');
+        });
+        
+      } catch (e) {
+        console.error('Movie page error:', e);
+        container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);">Ошибка загрузки</div>';
       }
     }
 

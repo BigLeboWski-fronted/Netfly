@@ -212,6 +212,118 @@ app.get("/api/youtube/search", requireAuth, async (req, res) => {
   }
 });
 
+// ── TMDB API proxy ────────────────────────────────────────────────────────────
+
+const TMDB_BASE = "https://api.themoviedb.org/3";
+const TMDB_KEY = process.env.TMDB_API_KEY;
+
+// Search movies/series
+app.get("/api/tmdb/search", requireAuth, async (req, res) => {
+  const { query, page = 1 } = req.query;
+  if (!query) return res.status(400).json({ error: "Query required" });
+
+  try {
+    const url = `${TMDB_BASE}/search/multi?api_key=${TMDB_KEY}&language=ru-RU&query=${encodeURIComponent(query)}&page=${page}`;
+    const r = await fetch(url);
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.status_message || "TMDB error");
+    res.json(data);
+  } catch (e) {
+    console.error("TMDB search error:", e);
+    res.status(500).json({ error: "TMDB error" });
+  }
+});
+
+// Discover with filters
+app.get("/api/tmdb/discover", requireAuth, async (req, res) => {
+  const { type = "movie", genre, year, sort = "popularity.desc", page = 1 } = req.query;
+  
+  try {
+    const params = new URLSearchParams({
+      api_key: TMDB_KEY,
+      language: "ru-RU",
+      sort_by: sort,
+      page,
+      "vote_count.gte": "100"
+    });
+    
+    if (genre) params.append("with_genres", genre);
+    if (year) params.append("primary_release_year", year);
+    
+    const endpoint = type === "tv" ? "discover/tv" : "discover/movie";
+    const url = `${TMDB_BASE}/${endpoint}?${params}`;
+    
+    const r = await fetch(url);
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.status_message || "TMDB error");
+    res.json(data);
+  } catch (e) {
+    console.error("TMDB discover error:", e);
+    res.status(500).json({ error: "TMDB error" });
+  }
+});
+
+// Movie details (full data)
+app.get("/api/tmdb/movie/:id", requireAuth, async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const params = new URLSearchParams({
+      api_key: TMDB_KEY,
+      language: "ru-RU",
+      append_to_response: "credits,videos,similar,keywords,release_dates,external_ids"
+    });
+    
+    const url = `${TMDB_BASE}/movie/${id}?${params}`;
+    const r = await fetch(url);
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.status_message || "TMDB error");
+    res.json(data);
+  } catch (e) {
+    console.error("TMDB movie error:", e);
+    res.status(500).json({ error: "TMDB error" });
+  }
+});
+
+// TV series details (full data)
+app.get("/api/tmdb/tv/:id", requireAuth, async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const params = new URLSearchParams({
+      api_key: TMDB_KEY,
+      language: "ru-RU",
+      append_to_response: "credits,videos,similar,keywords,external_ids"
+    });
+    
+    const url = `${TMDB_BASE}/tv/${id}?${params}`;
+    const r = await fetch(url);
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.status_message || "TMDB error");
+    res.json(data);
+  } catch (e) {
+    console.error("TMDB tv error:", e);
+    res.status(500).json({ error: "TMDB error" });
+  }
+});
+
+// Get genres list
+app.get("/api/tmdb/genres", requireAuth, async (req, res) => {
+  const { type = "movie" } = req.query;
+  
+  try {
+    const endpoint = type === "tv" ? "genre/tv/list" : "genre/movie/list";
+    const url = `${TMDB_BASE}/${endpoint}?api_key=${TMDB_KEY}&language=ru-RU`;
+    const r = await fetch(url);
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.status_message || "TMDB error");
+    res.json(data);
+  } catch (e) {
+    console.error("TMDB genres error:", e);
+    res.status(500).json({ error: "TMDB error" });
+  }
+});
+
 // ── Telegram integration ──────────────────────────────────────────────────────
 
 const TG_SECRET = process.env.TG_SECRET;
