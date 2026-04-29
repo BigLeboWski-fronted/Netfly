@@ -8051,29 +8051,35 @@ if(finishToRated){
 
   checkSession();
 }
-// Telegram Mini App autologin
-  (async function tgAutoLogin() {
-    const tg = window.Telegram?.WebApp;
-    if (!tg || !tg.initData) return;
-    if (sessionStorage.getItem('tgAutoLogged')) return;
-    tg.ready();
-    try {
-      const meRes = await fetch('/api/me');
-      if (meRes.ok) return; // already logged in
-      const res = await fetch('/api/tg/webapp-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData: tg.initData }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.ok) {
-          sessionStorage.setItem('tgAutoLogged', '1');
-          window.location.reload();
-        }
-      }
-    } catch {}
-  })();
+app.post("/api/tg/webapp-login", async (req, res) => {
+  const { initData } = req.body;
+  if (!initData) return res.status(400).json({ error: "No initData" });
+
+  const crypto = require("crypto");
+  const params = new URLSearchParams(initData);
+  const hash = params.get("hash");
+  params.delete("hash");
+  params.delete("signature");
+
+  const dataCheckString = [...params.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => `${k}=${v}`)
+    .join("\n");
+
+  // ВРЕМЕННО — удали после отладки
+  console.log("TOKEN:", JSON.stringify(process.env.TG_TOKEN));
+  console.log("dataCheckString:", dataCheckString);
+  console.log("hash from tg:", hash);
+
+  const secretKey = crypto.createHmac("sha256", "WebAppData").update(process.env.TG_TOKEN).digest();
+  const expectedHash = crypto.createHmac("sha256", secretKey).update(dataCheckString).digest("hex");
+
+  console.log("expectedHash:", expectedHash);
+  // конец временного лога
+
+  if (expectedHash !== hash) return res.status(403).json({ error: "Invalid initData" });
+  // ...
+});
 
   // Register service worker
   if ("serviceWorker" in navigator) {
