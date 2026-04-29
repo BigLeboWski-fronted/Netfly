@@ -2,26 +2,15 @@ require("dotenv").config();
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const cookieParser = require("cookie-parser");
-const helmet = require("helmet");
-const rateLimit = require("express-rate-limit");
 const path = require("path");
 const { Resend } = require("resend");
 const { pool, migrate } = require("./db");
 const { signToken, requireAuth } = require("./auth");
 
 const app = express();
-app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "../public")));
-
-const authRateLimit = rateLimit({
-  windowMs: 10 * 60 * 1000,
-  max: 10,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: "Слишком много попыток. Попробуй позже." },
-});
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_EMAIL = process.env.FROM_EMAIL || "noreply@yourdomain.com";
@@ -37,7 +26,7 @@ app.get("/health", (req, res) => res.json({ ok: true }));
 
 // ── Email verification ────────────────────────────────────────────────────────
 
-app.post("/api/send-code", authRateLimit, async (req, res) => {
+app.post("/api/send-code", async (req, res) => {
   const { email, username, password } = req.body;
   if (!email || !username || !password)
     return res.status(400).json({ error: "Заполни все поля" });
@@ -82,7 +71,7 @@ app.post("/api/send-code", authRateLimit, async (req, res) => {
   }
 });
 
-app.post("/api/verify-code", authRateLimit, async (req, res) => {
+app.post("/api/verify-code", async (req, res) => {
   const { email, username, password, code } = req.body;
   if (!email || !username || !password || !code)
     return res.status(400).json({ error: "Заполни все поля" });
@@ -120,7 +109,7 @@ app.post("/api/verify-code", authRateLimit, async (req, res) => {
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
-app.post("/api/login", authRateLimit, async (req, res) => {
+app.post("/api/login", async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: "Заполни все поля" });
 
@@ -355,6 +344,134 @@ app.get("/api/tmdb/image/*", requireAuth, async (req, res) => {
     console.error("TMDB image proxy error:", e);
     res.status(404).send("Image not found");
   }
+});
+
+// ── Telegram integration ──────────────────────────────────────────────────────
+
+const TG_SECRET = process.env.TG_SECRET;
+
+// Generate link code (called from site, requires auth)
+app.post("/api/tg/gen-code", requireAuth, async (req, res) => {
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+  await pool.query("UPDATE link_codes SET used=TRUE WHERE user_id=$1", [req.userId]);
+  await pool.query(
+    "INSERT INTO link_codes (user_id, code, expires_at) VALUES ($1,$2,$3)",
+    [req.userId, code, expiresAt]
+  );
+  res.json({ code });
+});
+
+// Get linked Telegram info (called from site, requires auth)
+app.get("/api/tg/linked", requireAuth, async (req, res) => {
+  const { rows } = await pool.query(
+    "SELECT telegram_id, telegram_username FROM telegram_links WHERE user_id=$1",
+    [req.userId]
+  );
+  if (!rows.length) return res.json({ linked: false });
+  res.json({ linked: true, telegram_id: rows[0].telegram_id, telegram_username: rows[0].telegram_username });
+});
+
+// Verify link code + bind telegram_id (called from bot)
+app.post("/api/tg/verify-link", async (req, res) => {
+  if (req.headers["x-tg-secret"] !== TG_SECRET)
+    return res.status(403).json({ error: "Forbidden" });
+  const { code, telegram_id, telegram_username } = req.body;
+  if (!code || !telegram_id) return res.status(400).json({ error: "Bad request" });
+
+  const { rows } = await pool.query(
+    `SELECT * FROM link_codes WHERE code=$1 AND used=FALSE AND expires_at > NOW() LIMIT 1`,
+    [code]
+  );
+  if (!rows.length) return res.status(400).json({ error: "Неверный или истёкший код" });
+
+  await pool.query("UPDATE link_codes SET used=TRUE WHERE id=$1", [rows[0].id]);
+  await pool.query(
+    `INSERT INTO telegram_links (telegram_id, user_id, telegram_username) VALUES ($1,$2,$3)
+     ON CONFLICT (telegram_id) DO UPDATE SET user_id=$2, telegram_username=$3, linked_at=NOW()`,
+    [telegram_id, rows[0].user_id, telegram_username || null]
+  );
+  const user = await pool.query("SELECT username FROM users WHERE id=$1", [rows[0].user_id]);
+  res.json({ ok: true, username: user.rows[0].username });
+});
+
+// Auto-login via Telegram Mini App initData
+app.post("/api/tg/webapp-login", async (req, res) => {
+  const { initData } = req.body;
+  if (!initData) return res.status(400).json({ error: "No initData" });
+
+  const crypto = require("crypto");
+  const params = new URLSearchParams(initData);
+  const hash = params.get("hash");
+  params.delete("hash");
+  params.delete("signature");
+
+  const dataCheckString = [...params.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => `${k}=${v}`)
+    .join("\n");
+
+  const secretKey = crypto.createHmac("sha256", "WebAppData").update(process.env.TG_TOKEN).digest();
+  const expectedHash = crypto.createHmac("sha256", secretKey).update(dataCheckString).digest("hex");
+
+  if (expectedHash !== hash) return res.status(403).json({ error: "Invalid initData" });
+
+  const user = JSON.parse(params.get("user") || "{}");
+  const telegramId = user.id;
+  if (!telegramId) return res.status(400).json({ error: "No user in initData" });
+
+  const link = await pool.query("SELECT user_id FROM telegram_links WHERE telegram_id=$1", [telegramId]);
+  if (!link.rows.length) return res.status(404).json({ error: "Account not linked" });
+
+  const userId = link.rows[0].user_id;
+  res.cookie("token", signToken(userId), COOKIE_OPTS);
+  const u = await pool.query("SELECT username FROM users WHERE id=$1", [userId]);
+  res.json({ ok: true, username: u.rows[0].username });
+});
+
+// Get profile data by telegram_id (called from bot)
+app.get("/api/tg/profile", async (req, res) => {
+  if (req.headers["x-tg-secret"] !== TG_SECRET)
+    return res.status(403).json({ error: "Forbidden" });
+  const { telegram_id } = req.query;
+  if (!telegram_id) return res.status(400).json({ error: "Bad request" });
+
+  const link = await pool.query("SELECT user_id FROM telegram_links WHERE telegram_id=$1", [telegram_id]);
+  if (!link.rows.length) return res.status(404).json({ error: "Аккаунт не привязан" });
+
+  const userId = link.rows[0].user_id;
+  const [userRes, dataRes] = await Promise.all([
+    pool.query("SELECT username FROM users WHERE id=$1", [userId]),
+    pool.query("SELECT movies, profile FROM user_data WHERE user_id=$1", [userId]),
+  ]);
+
+  const username = userRes.rows[0]?.username || "";
+  const movies = dataRes.rows[0]?.movies || [];
+  const profile = dataRes.rows[0]?.profile || {};
+
+  const watched = movies.filter(m => (m.status || "watched") === "watched");
+  const scores = watched.map(m => {
+    const vals = Object.values(m.scores || {}).filter(v => typeof v === "number");
+    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+  }).filter(s => s !== null);
+  const avgScore = scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : null;
+
+  const best = watched
+    .map(m => {
+      const vals = Object.values(m.scores || {}).filter(v => typeof v === "number");
+      const final = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+      return { name: m.name, final };
+    })
+    .sort((a, b) => b.final - a.final)[0] || null;
+
+  res.json({
+    username,
+    watched_count: watched.length,
+    avg_score: avgScore,
+    best_movie: best?.name || null,
+    fav_director: profile.favDirectorName || null,
+    fav_actor: profile.favActorName || null,
+  });
 });
 
 // ── Password reset ────────────────────────────────────────────────────────────

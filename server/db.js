@@ -33,6 +33,19 @@ async function migrate() {
       updated_at TIMESTAMPTZ DEFAULT NOW()
     );
 
+    CREATE TABLE IF NOT EXISTS link_codes (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      code TEXT NOT NULL,
+      expires_at TIMESTAMPTZ NOT NULL,
+      used BOOLEAN NOT NULL DEFAULT FALSE
+    );
+
+    CREATE TABLE IF NOT EXISTS telegram_links (
+      telegram_id BIGINT PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      linked_at TIMESTAMPTZ DEFAULT NOW()
+    );
   `);
 
   // Account change cooldown columns
@@ -45,19 +58,15 @@ async function migrate() {
   // Indexes
   await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_verification_codes_email ON verification_codes(email);
+    CREATE INDEX IF NOT EXISTS idx_link_codes_code ON link_codes(code);
+    CREATE INDEX IF NOT EXISTS idx_telegram_links_telegram_id ON telegram_links(telegram_id);
   `);
 
   // Safe migrations for existing tables
   await pool.query(`
     ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS verified BOOLEAN NOT NULL DEFAULT FALSE;
-  `);
-  // Cleanup legacy Telegram tables and indexes
-  await pool.query(`
-    DROP INDEX IF EXISTS idx_link_codes_code;
-    DROP INDEX IF EXISTS idx_telegram_links_telegram_id;
-    DROP TABLE IF EXISTS link_codes;
-    DROP TABLE IF EXISTS telegram_links;
+    ALTER TABLE telegram_links ADD COLUMN IF NOT EXISTS telegram_username TEXT;
   `);
   // Fill email from username for old rows, then make unique+not null
   await pool.query(`UPDATE users SET email = username WHERE email IS NULL;`);
