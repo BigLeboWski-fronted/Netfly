@@ -1,6 +1,9 @@
 const jwt = require("jsonwebtoken");
 
-const SECRET = process.env.JWT_SECRET || "change_me_in_production";
+const SECRET = process.env.JWT_SECRET;
+if (!SECRET) {
+  throw new Error("JWT_SECRET is required");
+}
 
 function signToken(userId) {
   return jwt.sign({ sub: userId }, SECRET, { expiresIn: "30d" });

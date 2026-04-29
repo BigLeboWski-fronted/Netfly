@@ -2,15 +2,26 @@ require("dotenv").config();
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const cookieParser = require("cookie-parser");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
 const path = require("path");
 const { Resend } = require("resend");
 const { pool, migrate } = require("./db");
 const { signToken, requireAuth } = require("./auth");
 
 const app = express();
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "../public")));
+
+const authRateLimit = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Слишком много попыток. Попробуй позже." },
+});
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_EMAIL = process.env.FROM_EMAIL || "noreply@yourdomain.com";
@@ -26,7 +37,7 @@ app.get("/health", (req, res) => res.json({ ok: true }));
 
 // ── Email verification ────────────────────────────────────────────────────────
 
-app.post("/api/send-code", async (req, res) => {
+app.post("/api/send-code", authRateLimit, async (req, res) => {
   const { email, username, password } = req.body;
   if (!email || !username || !password)
     return res.status(400).json({ error: "Заполни все поля" });
@@ -71,7 +82,7 @@ app.post("/api/send-code", async (req, res) => {
   }
 });
 
-app.post("/api/verify-code", async (req, res) => {
+app.post("/api/verify-code", authRateLimit, async (req, res) => {
   const { email, username, password, code } = req.body;
   if (!email || !username || !password || !code)
     return res.status(400).json({ error: "Заполни все поля" });
@@ -109,7 +120,7 @@ app.post("/api/verify-code", async (req, res) => {
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
-app.post("/api/login", async (req, res) => {
+app.post("/api/login", authRateLimit, async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: "Заполни все поля" });
 
