@@ -10,7 +10,6 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Netfly</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
 :root{
   --bg:#0b0b0c;
@@ -2367,18 +2366,6 @@ body::before{
 .syncDot.err{ background:rgba(255,100,100,.9); }
 
 
-.tgBanner{
-  display:inline-flex;align-items:center;gap:10px;
-  margin-top:18px;padding:12px 18px;
-  background:rgba(42,171,238,.1);
-  border:1px solid rgba(42,171,238,.3);
-  border-radius:12px;
-  color:var(--text);text-decoration:none;
-  font-size:14px;transition:background .2s,border-color .2s;
-}
-.tgBanner:hover{background:rgba(42,171,238,.18);border-color:rgba(42,171,238,.55);}
-.tgBannerTag{color:#2AABEE;font-weight:700;font-size:13px;white-space:nowrap;}
-
 /* ── Mobile fixes ─────────────────────────────────────────────────────────── */
 @media (max-width: 520px) {
   body { overflow-x: hidden; }
@@ -2464,11 +2451,6 @@ body::before{
       <div class="homeCenter">
         <h1 class="homeTitle">Net<span class="red">fly</span></h1>
         <div class="homeSub">Твой личный трекер фильмов и сериалов: оценивай, сохраняй “буду смотреть”, собирай избранное и находи новые идеи.</div>
-        <a class="tgBanner" href="https://t.me/netfly1gg_bot" target="_blank" rel="noopener">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.93 6.686-1.683 7.927c-.126.56-.456.697-.924.433l-2.56-1.887-1.235 1.188c-.137.137-.252.252-.516.252l.184-2.61 4.75-4.29c.207-.184-.045-.286-.32-.102L7.93 14.42l-2.52-.787c-.548-.172-.56-.548.114-.812l9.83-3.79c.457-.165.857.102.576.655z" fill="#2AABEE"/></svg>
-          <span>Не знаешь что посмотреть? <strong>Выбери в Telegram боте</strong></span>
-          <span class="tgBannerTag">@netfly1gg_bot</span>
-        </a>
       </div>
 
       <div class="card">
@@ -2824,19 +2806,6 @@ body::before{
           </div>
         </div>
 
-        <div class="settingsGroup">
-          <div class="settingsRow">
-            <div class="settingsRowLabel">
-              <strong>Telegram</strong>
-              <span id="tgStatusText">Не привязан</span>
-            </div>
-            <button class="primary" id="tgGenCodeBtn" onclick="tgGenCode()" style="font-size:13px;padding:8px 14px;">🔗 Привязать</button>
-          </div>
-          <div id="tgCodeDisplay" style="display:none;padding:16px;background:var(--card2);border-top:1px solid var(--border);">
-            <div style="font-size:13px;color:var(--muted);margin-bottom:10px;">Введи код в боте: <b>/link КОД</b><br>Действителен 10 минут</div>
-            <div id="tgCode" style="font-size:28px;font-weight:900;letter-spacing:4px;color:var(--accent);"></div>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -3077,6 +3046,7 @@ body::before{
   </div>
 </div>
 
+  <script src="/js/auth-sync.js"></script>
   <script>
     // ========= Config =========
     // External endpoints + local storage keys live here so they are easy to update.
@@ -3856,7 +3826,6 @@ function loadProfile(){
       if(viewId === "wish") renderWish();
       if(viewId === "now") renderNow();
       if(viewId === "profile") renderProfile();
-      if(viewId === "settings") loadTelegramInfo();
     }
     
     
@@ -7700,250 +7669,37 @@ if(finishToRated){
     }
 
 // ========= Auth + Server Sync =========
-    const API = ""; // same origin
+    const authSync = window.NetflyAuthSync.createAuthSync({
+      getMovies: () => movies,
+      setMovies: (v) => { movies = v; },
+      getProfile: () => profile,
+      setProfile: (v) => { profile = v; },
+      getNowState: () => nowState,
+      setNowState: (v) => { nowState = v; },
+      getOmdbEpCache: () => omdbEpCache,
+      setOmdbEpCache: (v) => { omdbEpCache = v; },
+      saveMovies: () => saveMovies(),
+      saveProfile: (p) => saveProfile(p),
+      saveNowState: () => saveNowState(),
+      saveEpCache: () => saveEpCache(),
+      loadProfile: () => loadProfile(),
+      loadNowState: () => loadNowState(),
+      applyAvatar: (avatar) => applyAvatar(avatar),
+      renderEverything: () => renderEverything(),
+    });
 
-    let syncTimer = null;
-    let currentUser = null;
-
-    function setSyncDot(state){ // "syncing"|"ok"|"err"
-      const d = document.getElementById("syncDot");
-      if(!d) return;
-      d.className = "syncDot " + state;
-    }
-
-    async function apiFetch(path, opts = {}){
-      const res = await fetch(API + path, {
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        ...opts,
-      });
-      const data = await res.json().catch(() => ({}));
-      if(!res.ok) throw new Error(data.error || res.statusText);
-      return data;
-    }
-
-    async function loadFromServer(){
-      try{
-        const data = await apiFetch("/api/data");
-        if(Array.isArray(data.movies) && data.movies.length){
-          movies = data.movies;
-          saveMovies();
-        }
-        if(data.profile && Object.keys(data.profile).length){
-          const local = loadProfile();
-          profile = { ...local, ...data.profile };
-          // keep local avatar if server doesn't have one (base64 may not sync)
-          if(!profile.avatar && local.avatar) profile.avatar = local.avatar;
-          saveProfile(profile);
-        }
-        if(data.now_state && Object.keys(data.now_state).length){
-          nowState = loadNowState();
-          Object.assign(nowState, data.now_state);
-          saveNowState();
-        }
-        if(data.omdb_ep_cache && Object.keys(data.omdb_ep_cache).length){
-          omdbEpCache = { ...omdbEpCache, ...data.omdb_ep_cache };
-          saveEpCache();
-        }
-      }catch(e){
-        console.warn("loadFromServer:", e.message);
-      }
-    }
-
-    async function syncToServer(){
-      if(!currentUser) return;
-      setSyncDot("syncing");
-      try{
-        await apiFetch("/api/data", {
-          method: "PUT",
-          body: JSON.stringify({
-            movies,
-            profile,
-            now_state: nowState,
-            omdb_ep_cache: omdbEpCache,
-          }),
-        });
-        setSyncDot("ok");
-      }catch(e){
-        setSyncDot("err");
-        console.warn("syncToServer:", e.message);
-      }
-    }
-
-    // Debounced auto-sync: fires 3s after last data change
-    function scheduleSync(){
-      if(!currentUser) return;
-      clearTimeout(syncTimer);
-      syncTimer = setTimeout(syncToServer, 3000);
-    }
+    const apiFetch = authSync.apiFetch;
+    const checkSession = authSync.checkSession;
 
     // Patch saveMovies/saveProfile/saveNowState to also trigger sync
     const _origSaveMovies = saveMovies;
-    saveMovies = function(){ _origSaveMovies(); scheduleSync(); };
+    saveMovies = function(){ _origSaveMovies(); authSync.scheduleSync(); };
 
     const _origSaveProfile = saveProfile;
-    saveProfile = function(p){ _origSaveProfile(p); scheduleSync(); };
+    saveProfile = function(p){ _origSaveProfile(p); authSync.scheduleSync(); };
 
     const _origSaveNowState = saveNowState;
-    saveNowState = function(){ _origSaveNowState(); scheduleSync(); };
-
-    function showApp(username){
-      currentUser = username;
-      document.getElementById("authScreen").classList.add("hidden");
-      const badge = document.getElementById("userBadge");
-      badge.style.display = "flex";
-      document.getElementById("userBadgeName").textContent = username;
-    }
-
-    function showAuthScreen(){
-      currentUser = null;
-      document.getElementById("authScreen").classList.remove("hidden");
-      document.getElementById("userBadge").style.display = "none";
-    }
-
-    // Auth UI
-    let authMode = "login"; // "login" | "register" | "code" | "forgot" | "resetCode"
-    const _authSubmit = document.getElementById("authSubmit");
-    const _authError = document.getElementById("authError");
-
-    function authSetError(msg){ _authError.textContent = msg || ""; }
-    function authSetLoading(on){ _authSubmit.disabled = on; }
-
-    function showAuthStep(step){
-      document.getElementById("authStepLogin").style.display    = step === "login"     ? "" : "none";
-      document.getElementById("authStepRegister").style.display  = step === "register"  ? "" : "none";
-      document.getElementById("authStepCode").style.display     = step === "code"      ? "" : "none";
-      document.getElementById("authStepForgot").style.display   = step === "forgot"    ? "" : "none";
-      document.getElementById("authStepReset").style.display    = step === "resetCode" ? "" : "none";
-      document.getElementById("forgotPasswordLink").style.display = (step === "login") ? "" : "none";
-    }
-
-    document.getElementById("tabLogin").addEventListener("click", () => {
-      authMode = "login";
-      document.getElementById("tabLogin").classList.add("active");
-      document.getElementById("tabRegister").classList.remove("active");
-      _authSubmit.textContent = "Войти";
-      showAuthStep("login");
-      authSetError("");
-    });
-
-    document.getElementById("tabRegister").addEventListener("click", () => {
-      authMode = "register";
-      document.getElementById("tabRegister").classList.add("active");
-      document.getElementById("tabLogin").classList.remove("active");
-      _authSubmit.textContent = "Получить код";
-      showAuthStep("register");
-      authSetError("");
-    });
-
-    _authSubmit.addEventListener("click", async () => {
-      authSetError("");
-      authSetLoading(true);
-      const origText = _authSubmit.textContent;
-      _authSubmit.textContent = "...";
-
-      try {
-        if (authMode === "login") {
-          const email = document.getElementById("authEmail").value.trim();
-          const password = document.getElementById("authPassword").value;
-          const data = await apiFetch("/api/login", {
-            method: "POST", body: JSON.stringify({ email, password })
-          });
-          showApp(data.username);
-          await loadFromServer();
-          applyAvatar(profile.avatar || null);
-          renderEverything();
-
-        } else if (authMode === "register") {
-          const email    = document.getElementById("authRegEmail").value.trim();
-          const username = document.getElementById("authRegUsername").value.trim();
-          const password = document.getElementById("authRegPassword").value;
-          await apiFetch("/api/send-code", {
-            method: "POST", body: JSON.stringify({ email, username, password })
-          });
-          // move to code step
-          authMode = "code";
-          document.getElementById("authCodeEmailHint").textContent = email;
-          showAuthStep("code");
-          _authSubmit.textContent = "Подтвердить";
-          document.getElementById("authCode").focus();
-
-        } else if (authMode === "code") {
-          const email    = document.getElementById("authRegEmail").value.trim();
-          const username = document.getElementById("authRegUsername").value.trim();
-          const password = document.getElementById("authRegPassword").value;
-          const code     = document.getElementById("authCode").value.trim();
-          const data = await apiFetch("/api/verify-code", {
-            method: "POST", body: JSON.stringify({ email, username, password, code })
-          });
-          showApp(data.username);
-          await loadFromServer();
-          applyAvatar(profile.avatar || null);
-          renderEverything();
-        } else if (authMode === "forgot") {
-          const email = document.getElementById("authForgotEmail").value.trim();
-          await apiFetch("/api/forgot-password", {
-            method: "POST", body: JSON.stringify({ email })
-          });
-          authMode = "resetCode";
-          document.getElementById("authResetEmailHint").textContent = email;
-          showAuthStep("resetCode");
-          _authSubmit.textContent = "Сменить пароль";
-          document.getElementById("authResetCode").focus();
-
-        } else if (authMode === "resetCode") {
-          const email    = document.getElementById("authForgotEmail").value.trim();
-          const code     = document.getElementById("authResetCode").value.trim();
-          const password = document.getElementById("authNewPassword").value;
-          await apiFetch("/api/reset-password", {
-            method: "POST", body: JSON.stringify({ email, code, password })
-          });
-          authMode = "login";
-          showAuthStep("login");
-          _authSubmit.textContent = "Войти";
-          authSetError("");
-          document.getElementById("authEmail").value = email;
-        }
-      } catch(e) {
-        authSetError(e.message);
-        _authSubmit.textContent = origText;
-      } finally {
-        authSetLoading(false);
-        if(authMode !== "code") _authSubmit.textContent = origText;
-        else if(!_authError.textContent) {} // keep "Подтвердить"
-      }
-    });
-
-    // Enter key
-    ["authEmail","authPassword","authRegEmail","authRegUsername","authRegPassword","authCode","authForgotEmail","authResetCode","authNewPassword"].forEach(id => {
-      const el = document.getElementById(id);
-      if(el) el.addEventListener("keydown", (e) => { if(e.key === "Enter") _authSubmit.click(); });
-    });
-
-    document.getElementById("forgotPasswordLink").addEventListener("click", () => {
-      authMode = "forgot";
-      showAuthStep("forgot");
-      _authSubmit.textContent = "Отправить код";
-      authSetError("");
-      document.getElementById("authForgotEmail").focus();
-    });
-
-    document.getElementById("logoutBtn").addEventListener("click", async () => {
-      await apiFetch("/api/logout", { method: "POST" }).catch(() => {});
-      showAuthScreen();
-    });
-
-    // Check session on load
-    async function checkSession(){
-      try{
-        const data = await apiFetch("/api/me");
-        showApp(data.username);
-        await loadFromServer();
-        applyAvatar(profile.avatar || null);
-      }catch{
-        showAuthScreen();
-      }
-    }
+    saveNowState = function(){ _origSaveNowState(); authSync.scheduleSync(); };
 
   function init(){
   renderNav();
@@ -8058,50 +7814,6 @@ if(finishToRated){
   }
 
   init();
-
-  async function loadTelegramInfo() {
-    try {
-      const res = await fetch('/api/tg/linked');
-      if (!res.ok) return;
-      const data = await res.json();
-      const statusText = document.getElementById('tgStatusText');
-      const btn = document.getElementById('tgGenCodeBtn');
-      
-      if (data.linked) {
-        const displayName = data.telegram_username 
-          ? `@${data.telegram_username}` 
-          : `ID: ${data.telegram_id}`;
-        statusText.textContent = displayName;
-        statusText.style.color = 'var(--text)';
-        btn.textContent = '🔄 Изменить';
-      } else {
-        statusText.textContent = 'Не привязан';
-        statusText.style.color = 'var(--muted)';
-        btn.textContent = '🔗 Привязать';
-      }
-    } catch (e) {
-      console.error('Failed to load Telegram info:', e);
-    }
-  }
-
-  async function tgGenCode() {
-    const btn = document.getElementById('tgGenCodeBtn');
-    const originalText = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = '⏳';
-    try {
-      const res = await fetch('/api/tg/gen-code', { method: 'POST' });
-      if (!res.ok) throw new Error();
-      const { code } = await res.json();
-      document.getElementById('tgCode').textContent = code;
-      document.getElementById('tgCodeDisplay').style.display = 'block';
-      btn.textContent = '🔄 Новый код';
-    } catch {
-      btn.textContent = originalText;
-      alert('Ошибка. Попробуй ещё раз.');
-    }
-    btn.disabled = false;
-  }
 
   // ── Trailer modal ─────────────────────────────────────────────────────────────
 
