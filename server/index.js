@@ -6,8 +6,18 @@ const path = require("path");
 const { Resend } = require("resend");
 const { pool, migrate } = require("./db");
 const { signToken, requireAuth } = require("./auth");
+const logger = require("./logger");
 
 const app = express();
+
+// HTTP request logging
+const morgan = require("morgan");
+app.use(morgan("combined", {
+  stream: {
+    write: (message) => logger.info(message.trim())
+  }
+}));
+
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "../public")));
@@ -66,7 +76,7 @@ app.post("/api/send-code", async (req, res) => {
 
     res.json({ ok: true });
   } catch (e) {
-    console.error(e);
+    logger.error("Error in /api/send-code", { error: e.message, stack: e.stack });
     res.status(500).json({ error: "Ошибка отправки письма" });
   }
 });
@@ -99,10 +109,11 @@ app.post("/api/verify-code", async (req, res) => {
     await pool.query("INSERT INTO user_data (user_id) VALUES ($1)", [userId]);
 
     res.cookie("token", signToken(userId), COOKIE_OPTS);
+    logger.info("User registered successfully", { userId, email: email.toLowerCase(), username: username.trim() });
     res.json({ ok: true, username: username.trim() });
   } catch (e) {
     if (e.code === "23505") return res.status(409).json({ error: "Email или имя уже заняты" });
-    console.error(e);
+    logger.error("Error in /api/send-code", { error: e.message, stack: e.stack });
     res.status(500).json({ error: "Ошибка сервера" });
   }
 });
@@ -126,7 +137,7 @@ app.post("/api/login", async (req, res) => {
     res.cookie("token", signToken(user.id), COOKIE_OPTS);
     res.json({ ok: true, username: user.username });
   } catch (e) {
-    console.error(e);
+    logger.error("Error in /api/send-code", { error: e.message, stack: e.stack });
     res.status(500).json({ error: "Ошибка сервера" });
   }
 });
@@ -207,7 +218,7 @@ app.get("/api/youtube/search", requireAuth, async (req, res) => {
     
     res.json({ results });
   } catch (e) {
-    console.error("YouTube API error:", e);
+    logger.error("YouTube API error", { error: e.message, stack: e.stack });
     res.status(500).json({ error: "YouTube API error" });
   }
 });
@@ -229,7 +240,7 @@ app.get("/api/tmdb/search", requireAuth, async (req, res) => {
     if (!r.ok) throw new Error(data.status_message || "TMDB error");
     res.json(data);
   } catch (e) {
-    console.error("TMDB search error:", e);
+    logger.error("TMDB search error", { error: e.message, stack: e.stack });
     res.status(500).json({ error: "TMDB error" });
   }
 });
@@ -258,7 +269,7 @@ app.get("/api/tmdb/discover", requireAuth, async (req, res) => {
     if (!r.ok) throw new Error(data.status_message || "TMDB error");
     res.json(data);
   } catch (e) {
-    console.error("TMDB discover error:", e);
+    logger.error("TMDB discover error", { error: e.message, stack: e.stack });
     res.status(500).json({ error: "TMDB error" });
   }
 });
@@ -280,7 +291,7 @@ app.get("/api/tmdb/movie/:id", requireAuth, async (req, res) => {
     if (!r.ok) throw new Error(data.status_message || "TMDB error");
     res.json(data);
   } catch (e) {
-    console.error("TMDB movie error:", e);
+    logger.error("TMDB movie error", { error: e.message, stack: e.stack });
     res.status(500).json({ error: "TMDB error" });
   }
 });
@@ -302,7 +313,7 @@ app.get("/api/tmdb/tv/:id", requireAuth, async (req, res) => {
     if (!r.ok) throw new Error(data.status_message || "TMDB error");
     res.json(data);
   } catch (e) {
-    console.error("TMDB tv error:", e);
+    logger.error("TMDB tv error", { error: e.message, stack: e.stack });
     res.status(500).json({ error: "TMDB error" });
   }
 });
@@ -319,7 +330,7 @@ app.get("/api/tmdb/genres", requireAuth, async (req, res) => {
     if (!r.ok) throw new Error(data.status_message || "TMDB error");
     res.json(data);
   } catch (e) {
-    console.error("TMDB genres error:", e);
+    logger.error("TMDB genres error", { error: e.message, stack: e.stack });
     res.status(500).json({ error: "TMDB error" });
   }
 });
@@ -341,7 +352,7 @@ app.get("/api/tmdb/image/*", requireAuth, async (req, res) => {
     const buffer = await response.arrayBuffer();
     res.send(Buffer.from(buffer));
   } catch (e) {
-    console.error("TMDB image proxy error:", e);
+    logger.error("TMDB image proxy error", { error: e.message, stack: e.stack });
     res.status(404).send("Image not found");
   }
 });
@@ -503,7 +514,7 @@ app.post("/api/forgot-password", async (req, res) => {
 
     res.json({ ok: true });
   } catch (e) {
-    console.error(e);
+    logger.error("Error in /api/send-code", { error: e.message, stack: e.stack });
     res.status(500).json({ error: "Ошибка отправки письма" });
   }
 });
@@ -529,7 +540,7 @@ app.post("/api/reset-password", async (req, res) => {
 
     res.json({ ok: true });
   } catch (e) {
-    console.error(e);
+    logger.error("Error in /api/send-code", { error: e.message, stack: e.stack });
     res.status(500).json({ error: "Ошибка сервера" });
   }
 });
@@ -563,7 +574,7 @@ app.post("/api/account/change-username", requireAuth, async (req, res) => {
     res.json({ ok: true });
   } catch (e) {
     if (e.code === "23505") return res.status(409).json({ error: "Имя уже занято" });
-    console.error(e);
+    logger.error("Error in /api/send-code", { error: e.message, stack: e.stack });
     res.status(500).json({ error: "Ошибка сервера" });
   }
 });
@@ -596,7 +607,7 @@ app.post("/api/account/change-email/send-code", requireAuth, async (req, res) =>
 
     res.json({ ok: true });
   } catch (e) {
-    console.error(e);
+    logger.error("Error in /api/send-code", { error: e.message, stack: e.stack });
     res.status(500).json({ error: "Ошибка отправки письма" });
   }
 });
@@ -630,7 +641,7 @@ app.post("/api/account/change-email", requireAuth, async (req, res) => {
     res.json({ ok: true });
   } catch (e) {
     if (e.code === "23505") return res.status(409).json({ error: "Email уже занят" });
-    console.error(e);
+    logger.error("Error in /api/send-code", { error: e.message, stack: e.stack });
     res.status(500).json({ error: "Ошибка сервера" });
   }
 });
@@ -671,7 +682,7 @@ app.post("/api/account/change-password", requireAuth, async (req, res) => {
     );
     res.json({ ok: true });
   } catch (e) {
-    console.error(e);
+    logger.error("Error in /api/send-code", { error: e.message, stack: e.stack });
     res.status(500).json({ error: "Ошибка сервера" });
   }
 });
@@ -700,7 +711,7 @@ app.post("/api/account/send-password-code", requireAuth, async (req, res) => {
 
     res.json({ ok: true });
   } catch (e) {
-    console.error(e);
+    logger.error("Error in /api/send-code", { error: e.message, stack: e.stack });
     res.status(500).json({ error: "Ошибка отправки письма" });
   }
 });
@@ -709,5 +720,8 @@ app.post("/api/account/send-password-code", requireAuth, async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 migrate()
-  .then(() => app.listen(PORT, () => console.log(`Netfly server on :${PORT}`)))
-  .catch((e) => { console.error("Migration failed", e); process.exit(1); });
+  .then(() => app.listen(PORT, () => logger.info(`Netfly server started on port ${PORT}`)))
+  .catch((e) => { 
+    logger.error("Migration failed", { error: e.message, stack: e.stack });
+    process.exit(1); 
+  });
