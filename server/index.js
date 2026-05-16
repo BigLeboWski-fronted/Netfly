@@ -7,6 +7,7 @@ const { Resend } = require("resend");
 const { pool, migrate } = require("./db");
 const { signToken, requireAuth } = require("./auth");
 const logger = require("./logger");
+const cache = require("./cache");
 
 const app = express();
 
@@ -178,12 +179,24 @@ app.put("/api/data", requireAuth, async (req, res) => {
 // ── OMDB proxy ────────────────────────────────────────────────────────────────
 
 app.get("/api/omdb", requireAuth, async (req, res) => {
-  const params = new URLSearchParams({ ...req.query, apikey: process.env.OMDB_API_KEY });
   try {
+    const cacheKey = cache.generateKey('omdb:search', req.query);
+    const cached = cache.get(cacheKey);
+    
+    if (cached) {
+      logger.info(`OMDB cache hit: ${JSON.stringify(req.query)}`);
+      return res.json(cached);
+    }
+
+    const params = new URLSearchParams({ ...req.query, apikey: process.env.OMDB_API_KEY });
     const r = await fetch(`https://www.omdbapi.com/?${params}`);
     const data = await r.json();
+    
+    cache.set(cacheKey, data, 60 * 60 * 1000); // 1 час
+    logger.info(`OMDB cached: ${JSON.stringify(req.query)}`);
     res.json(data);
   } catch (e) {
+    logger.error("OMDB error", { error: e.message, stack: e.stack });
     res.status(500).json({ error: "OMDB error" });
   }
 });
@@ -194,17 +207,25 @@ app.get("/api/youtube/search", requireAuth, async (req, res) => {
   const { q } = req.query;
   if (!q) return res.status(400).json({ error: "Query required" });
   
-  const params = new URLSearchParams({
-    part: "snippet",
-    q: q + " русский трейлер",
-    type: "video",
-    maxResults: "5",
-    key: process.env.YOUTUBE_API_KEY,
-    regionCode: "RU",
-    relevanceLanguage: "ru"
-  });
-
   try {
+    const cacheKey = cache.generateKey('youtube:search', { q });
+    const cached = cache.get(cacheKey);
+    
+    if (cached) {
+      logger.info(`YouTube search cache hit: ${q}`);
+      return res.json(cached);
+    }
+
+    const params = new URLSearchParams({
+      part: "snippet",
+      q: q + " русский трейлер",
+      type: "video",
+      maxResults: "5",
+      key: process.env.YOUTUBE_API_KEY,
+      regionCode: "RU",
+      relevanceLanguage: "ru"
+    });
+
     const r = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`);
     const data = await r.json();
     if (!r.ok) throw new Error(data.error?.message || "YouTube API error");
@@ -216,7 +237,10 @@ app.get("/api/youtube/search", requireAuth, async (req, res) => {
       channelTitle: item.snippet.channelTitle
     }));
     
-    res.json({ results });
+    const response = { results };
+    cache.set(cacheKey, response, 60 * 60 * 1000); // 1 час
+    logger.info(`YouTube search cached: ${q}`);
+    res.json(response);
   } catch (e) {
     logger.error("YouTube API error", { error: e.message, stack: e.stack });
     res.status(500).json({ error: "YouTube API error" });
@@ -234,10 +258,21 @@ app.get("/api/tmdb/search", requireAuth, async (req, res) => {
   if (!query) return res.status(400).json({ error: "Query required" });
 
   try {
+    const cacheKey = cache.generateKey('tmdb:search', { query, page });
+    const cached = cache.get(cacheKey);
+    
+    if (cached) {
+      logger.info(`TMDB search cache hit: ${query} page ${page}`);
+      return res.json(cached);
+    }
+
     const url = `${TMDB_BASE}/search/multi?api_key=${TMDB_KEY}&language=ru-RU&query=${encodeURIComponent(query)}&page=${page}`;
     const r = await fetch(url);
     const data = await r.json();
     if (!r.ok) throw new Error(data.status_message || "TMDB error");
+    
+    cache.set(cacheKey, data, 60 * 60 * 1000); // 1 час
+    logger.info(`TMDB search cached: ${query} page ${page}`);
     res.json(data);
   } catch (e) {
     logger.error("TMDB search error", { error: e.message, stack: e.stack });
@@ -250,6 +285,14 @@ app.get("/api/tmdb/discover", requireAuth, async (req, res) => {
   const { type = "movie", genre, year, sort = "popularity.desc", page = 1 } = req.query;
   
   try {
+    const cacheKey = cache.generateKey('tmdb:discover', { type, genre, year, sort, page });
+    const cached = cache.get(cacheKey);
+    
+    if (cached) {
+      logger.info(`TMDB discover cache hit: ${type} page ${page}`);
+      return res.json(cached);
+    }
+
     const params = new URLSearchParams({
       api_key: TMDB_KEY,
       language: "ru-RU",
@@ -267,6 +310,9 @@ app.get("/api/tmdb/discover", requireAuth, async (req, res) => {
     const r = await fetch(url);
     const data = await r.json();
     if (!r.ok) throw new Error(data.status_message || "TMDB error");
+    
+    cache.set(cacheKey, data, 30 * 60 * 1000); // 30 минут
+    logger.info(`TMDB discover cached: ${type} page ${page}`);
     res.json(data);
   } catch (e) {
     logger.error("TMDB discover error", { error: e.message, stack: e.stack });
@@ -279,6 +325,14 @@ app.get("/api/tmdb/movie/:id", requireAuth, async (req, res) => {
   const { id } = req.params;
   
   try {
+    const cacheKey = cache.generateKey('tmdb:movie', { id });
+    const cached = cache.get(cacheKey);
+    
+    if (cached) {
+      logger.info(`TMDB movie cache hit: ${id}`);
+      return res.json(cached);
+    }
+
     const params = new URLSearchParams({
       api_key: TMDB_KEY,
       language: "ru-RU",
@@ -289,6 +343,9 @@ app.get("/api/tmdb/movie/:id", requireAuth, async (req, res) => {
     const r = await fetch(url);
     const data = await r.json();
     if (!r.ok) throw new Error(data.status_message || "TMDB error");
+    
+    cache.set(cacheKey, data, 2 * 60 * 60 * 1000); // 2 часа
+    logger.info(`TMDB movie cached: ${id}`);
     res.json(data);
   } catch (e) {
     logger.error("TMDB movie error", { error: e.message, stack: e.stack });
@@ -301,6 +358,14 @@ app.get("/api/tmdb/tv/:id", requireAuth, async (req, res) => {
   const { id } = req.params;
   
   try {
+    const cacheKey = cache.generateKey('tmdb:tv', { id });
+    const cached = cache.get(cacheKey);
+    
+    if (cached) {
+      logger.info(`TMDB TV cache hit: ${id}`);
+      return res.json(cached);
+    }
+
     const params = new URLSearchParams({
       api_key: TMDB_KEY,
       language: "ru-RU",
@@ -311,6 +376,9 @@ app.get("/api/tmdb/tv/:id", requireAuth, async (req, res) => {
     const r = await fetch(url);
     const data = await r.json();
     if (!r.ok) throw new Error(data.status_message || "TMDB error");
+    
+    cache.set(cacheKey, data, 2 * 60 * 60 * 1000); // 2 часа
+    logger.info(`TMDB TV cached: ${id}`);
     res.json(data);
   } catch (e) {
     logger.error("TMDB tv error", { error: e.message, stack: e.stack });
@@ -323,11 +391,22 @@ app.get("/api/tmdb/genres", requireAuth, async (req, res) => {
   const { type = "movie" } = req.query;
   
   try {
+    const cacheKey = cache.generateKey('tmdb:genres', { type });
+    const cached = cache.get(cacheKey);
+    
+    if (cached) {
+      logger.info(`TMDB genres cache hit: ${type}`);
+      return res.json(cached);
+    }
+
     const endpoint = type === "tv" ? "genre/tv/list" : "genre/movie/list";
     const url = `${TMDB_BASE}/${endpoint}?api_key=${TMDB_KEY}&language=ru-RU`;
     const r = await fetch(url);
     const data = await r.json();
     if (!r.ok) throw new Error(data.status_message || "TMDB error");
+    
+    cache.set(cacheKey, data, 24 * 60 * 60 * 1000); // 24 часа (жанры редко меняются)
+    logger.info(`TMDB genres cached: ${type}`);
     res.json(data);
   } catch (e) {
     logger.error("TMDB genres error", { error: e.message, stack: e.stack });
