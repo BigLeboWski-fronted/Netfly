@@ -10,7 +10,6 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Netfly</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
 :root{
   --bg:#0b0b0c;
@@ -2367,18 +2366,6 @@ body::before{
 .syncDot.err{ background:rgba(255,100,100,.9); }
 
 
-.tgBanner{
-  display:inline-flex;align-items:center;gap:10px;
-  margin-top:18px;padding:12px 18px;
-  background:rgba(42,171,238,.1);
-  border:1px solid rgba(42,171,238,.3);
-  border-radius:12px;
-  color:var(--text);text-decoration:none;
-  font-size:14px;transition:background .2s,border-color .2s;
-}
-.tgBanner:hover{background:rgba(42,171,238,.18);border-color:rgba(42,171,238,.55);}
-.tgBannerTag{color:#2AABEE;font-weight:700;font-size:13px;white-space:nowrap;}
-
 /* ── Mobile fixes ─────────────────────────────────────────────────────────── */
 @media (max-width: 520px) {
   body { overflow-x: hidden; }
@@ -2464,11 +2451,6 @@ body::before{
       <div class="homeCenter">
         <h1 class="homeTitle">Net<span class="red">fly</span></h1>
         <div class="homeSub">Твой личный трекер фильмов и сериалов: оценивай, сохраняй “буду смотреть”, собирай избранное и находи новые идеи.</div>
-        <a class="tgBanner" href="https://t.me/netfly1gg_bot" target="_blank" rel="noopener">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.93 6.686-1.683 7.927c-.126.56-.456.697-.924.433l-2.56-1.887-1.235 1.188c-.137.137-.252.252-.516.252l.184-2.61 4.75-4.29c.207-.184-.045-.286-.32-.102L7.93 14.42l-2.52-.787c-.548-.172-.56-.548.114-.812l9.83-3.79c.457-.165.857.102.576.655z" fill="#2AABEE"/></svg>
-          <span>Не знаешь что посмотреть? <strong>Выбери в Telegram боте</strong></span>
-          <span class="tgBannerTag">@netfly1gg_bot</span>
-        </a>
       </div>
 
       <div class="card">
@@ -2823,19 +2805,6 @@ body::before{
           </div>
         </div>
 
-        <div class="settingsGroup">
-          <div class="settingsRow">
-            <div class="settingsRowLabel">
-              <strong>Telegram</strong>
-              <span id="tgStatusText">Не привязан</span>
-            </div>
-            <button class="primary" id="tgGenCodeBtn" onclick="tgGenCode()" style="font-size:13px;padding:8px 14px;">🔗 Привязать</button>
-          </div>
-          <div id="tgCodeDisplay" style="display:none;padding:16px;background:var(--card2);border-top:1px solid var(--border);">
-            <div style="font-size:13px;color:var(--muted);margin-bottom:10px;">Введи код в боте: <b>/link КОД</b><br>Действителен 10 минут</div>
-            <div id="tgCode" style="font-size:28px;font-weight:900;letter-spacing:4px;color:var(--accent);"></div>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -3833,7 +3802,6 @@ function loadProfile(){
       if(viewId === "wish") renderWish();
       if(viewId === "now") renderNow();
       if(viewId === "profile") renderProfile();
-      if(viewId === "settings") loadTelegramInfo();
     }
     
     
@@ -8018,80 +7986,12 @@ if(finishToRated){
 
   checkSession();
 }
-// Telegram Mini App autologin
-  (async function tgAutoLogin() {
-    const tg = window.Telegram?.WebApp;
-    if (!tg || !tg.initData) return;
-    if (sessionStorage.getItem('tgAutoLogged')) return;
-    tg.ready();
-    try {
-      const meRes = await fetch('/api/me');
-      if (meRes.ok) return; // already logged in
-      const res = await fetch('/api/tg/webapp-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData: tg.initData }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.ok) {
-          sessionStorage.setItem('tgAutoLogged', '1');
-          window.location.reload();
-        }
-      }
-    } catch {}
-  })();
-
   // Register service worker
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("/sw.js").catch(() => {});
   }
 
   init();
-
-  async function loadTelegramInfo() {
-    try {
-      const res = await fetch('/api/tg/linked');
-      if (!res.ok) return;
-      const data = await res.json();
-      const statusText = document.getElementById('tgStatusText');
-      const btn = document.getElementById('tgGenCodeBtn');
-      
-      if (data.linked) {
-        const displayName = data.telegram_username 
-          ? `@${data.telegram_username}` 
-          : `ID: ${data.telegram_id}`;
-        statusText.textContent = displayName;
-        statusText.style.color = 'var(--text)';
-        btn.textContent = '🔄 Изменить';
-      } else {
-        statusText.textContent = 'Не привязан';
-        statusText.style.color = 'var(--muted)';
-        btn.textContent = '🔗 Привязать';
-      }
-    } catch (e) {
-      console.error('Failed to load Telegram info:', e);
-    }
-  }
-
-  async function tgGenCode() {
-    const btn = document.getElementById('tgGenCodeBtn');
-    const originalText = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = '⏳';
-    try {
-      const res = await fetch('/api/tg/gen-code', { method: 'POST' });
-      if (!res.ok) throw new Error();
-      const { code } = await res.json();
-      document.getElementById('tgCode').textContent = code;
-      document.getElementById('tgCodeDisplay').style.display = 'block';
-      btn.textContent = '🔄 Новый код';
-    } catch {
-      btn.textContent = originalText;
-      alert('Ошибка. Попробуй ещё раз.');
-    }
-    btn.disabled = false;
-  }
 
 
 

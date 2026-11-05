@@ -4,7 +4,8 @@
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
-    "dev": "node --watch server/index.js"
+    "dev": "node --watch server/index.js",
+    "local": "node local-server.js"
   },
   "dependencies": {
     "bcryptjs": "2.4.3",
