@@ -70,6 +70,8 @@ body{
   gap:10px;
   user-select:none;
 }
+.brandMini{ transition:color .2s ease; color:inherit; text-decoration:none; }
+.brandMini:hover{ color:#e50914; }
 .brandMini .logoMark{
   width: 28px;
   height: 28px;
@@ -298,6 +300,31 @@ body{
   font-size: 16px;
   font-weight: 950;
 }
+.searchPoster{ position:relative; aspect-ratio:2/3; overflow:hidden; }
+.searchPoster img{ position:absolute; inset:0; display:block; width:100%; height:100%; object-fit:cover; }
+.searchPosterFallback{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; color:var(--muted); background:radial-gradient(ellipse at top,rgba(255,255,255,.08),transparent 75%),var(--search-card-bg); text-align:center; padding:12px; }
+.searchPosterFallback[hidden]{ display:none; }
+.searchPosterFallback svg{ width:40px; height:40px; opacity:.45; }
+.searchPosterFallback button{ position:relative; z-index:1; font-size:12px; padding:7px 12px; }
+#tmdbResults{ align-items:start; }
+.searchMovieCard{ min-width:0; align-self:start; }
+.searchPoster::after{ content:""; position:absolute; inset:55% 0 0; background:linear-gradient(to bottom,transparent,var(--search-card-bg)); pointer-events:none; }
+.searchMovieCard{ --search-card-bg:#171717; background:var(--search-card-bg) !important; }
+body.theme-cinema .searchMovieCard{ --search-card-bg:#201710; }
+.deleteConfirm{ width:min(440px,calc(100vw - 32px)); box-sizing:border-box; padding:26px; border:1px solid var(--border); border-radius:22px; background:var(--bg2,#111); color:var(--text); box-shadow:0 24px 90px rgba(0,0,0,.6); }
+.deleteConfirm::backdrop{ background:rgba(0,0,0,.65); backdrop-filter:blur(6px); }
+.deleteConfirm h3{ margin:0 0 16px; font-size:23px; }
+.deleteConfirmName{ font-size:17px; font-weight:800; overflow-wrap:anywhere; }
+.deleteConfirmHint{ color:var(--muted); font-size:13px; line-height:1.6; }
+.deleteConfirmActions{ display:flex; justify-content:flex-end; gap:10px; margin-top:24px; }
+.profileFold{ border:1px solid var(--border); border-radius:16px; padding:16px; margin:0 0 12px; background:rgba(255,255,255,.025); }
+.profileFold > summary{ cursor:pointer; font-size:14px; font-weight:800; color:var(--text); list-style:none; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.profileFold > summary::-webkit-details-marker{ display:none; }
+.profileFold > summary::after{ content:'+'; color:var(--muted); font-size:20px; font-weight:400; }
+.profileFold[open] > summary::after{ content:'−'; }
+.profileFold[open] > summary{ margin-bottom:16px; }
+.profilePage .profileFold .favGrid{ grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+@media(max-width:600px){ .profilePage .profileFold .favGrid{ grid-template-columns:1fr !important; } }
 .recentGrid{
   display:grid;
   grid-template-columns: repeat(3, 1fr);
@@ -433,7 +460,10 @@ select option{
   width:100%;
   height: 12px;
   border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.10);
+  border:0;
+  padding:0;
+  display:block;
+  background-clip:padding-box;
   background:
     linear-gradient(to right,
       rgba(255,255,255,.88) 0%,
@@ -444,7 +474,7 @@ select option{
     inset 0 1px 0 rgba(0,0,0,.40),
     0 10px 22px rgba(0,0,0,.22);
   outline:none;
-  transition: background .14s ease, border-color .14s ease, box-shadow .14s ease;
+  transition:none;
 }
 .scoreRange:hover{
   border-color: rgba(255,255,255,.16);
@@ -453,11 +483,10 @@ select option{
     0 12px 26px rgba(0,0,0,.28);
 }
 .scoreRange:focus-visible{
-  border-color: rgba(255,255,255,.22);
-  box-shadow:
-    0 0 0 3px rgba(255,255,255,.18),
-    inset 0 1px 0 rgba(0,0,0,.40),
-    0 12px 28px rgba(0,0,0,.30);
+  outline:2px solid var(--muted);
+  outline-offset:6px;
+  box-shadow:none;
+  border-radius:999px;
 }
 
 /* WebKit */
@@ -763,6 +792,7 @@ details.item summary::-webkit-details-marker{display:none;}
   font-weight: 950;
 }
 .sumRight{display:flex; align-items:center; gap: 10px; flex-shrink:0;}
+#view-rated .sumRight .arrow{ display:none; }
 .arrow{
   width: 38px;
   height: 38px;
@@ -1612,11 +1642,11 @@ button:active{ transform: translateY(1px) scale(.99); }
   animation:none;
 }
 .view.viewTransition{
-  animation:viewIn .28s var(--easeOut) both;
+  animation:viewIn .36s cubic-bezier(.25,.1,.25,1) both;
 }
 @keyframes viewIn{
-  from{ opacity:0; transform: translateY(12px); filter:blur(2px); }
-  to{ opacity:1; transform: translateY(0); filter:blur(0); }
+  from{ opacity:0; transform: translateY(5px); }
+  to{ opacity:1; transform: translateY(0); }
 }
 
 /* Modal polish */
@@ -2551,12 +2581,36 @@ body.theme-bw{ --bg:#000; --bg2:#111; --text:#f5f5f5; --muted:#aaa; --accent:#ff
   font-size: 12px;
   padding: 10px 10px;
 }
+/* Animate disclosure height using its actual content size. */
+html{ scrollbar-gutter:stable; }
+.view{ overflow-anchor:none; }
+@supports (interpolate-size:allow-keywords){
+  :root{ interpolate-size:allow-keywords; }
+  details.item::details-content,
+  details.profileFold::details-content,
+  details.nowPreferences::details-content{
+    block-size:0;
+    opacity:0;
+    overflow:clip;
+    transition:block-size .55s cubic-bezier(.4,0,.2,1), opacity .4s ease, content-visibility .55s allow-discrete;
+    transition-behavior:allow-discrete;
+  }
+  details.item[open]::details-content,
+  details.profileFold[open]::details-content,
+  details.nowPreferences[open]::details-content{ block-size:auto; opacity:1; }
+  details.item .itemBody{ max-height:none; transition:none; transform:none; will-change:auto; }
+  .seasonBody{ display:block; height:0; overflow:clip; padding-block:0; opacity:0; border-top-width:0; transition:height .55s cubic-bezier(.4,0,.2,1),padding .55s ease,opacity .4s ease; }
+  .seasonBlock.open .seasonBody{ height:auto; padding-block:10px 12px; opacity:1; border-top-width:1px; }
+}
+@media(prefers-reduced-motion:reduce){
+  details::details-content,.seasonBody{ transition:none !important; }
+}
 </style>
 </head>
 <body>
   <div class="topbar">
     <div class="topbarInner">
-      <div class="brandMini"><img src="/icon.svg" class="logoMark" aria-hidden="true" alt=""/>Netfly</div>
+      <a href="/" class="brandMini" onclick="event.preventDefault();goTo('home')"><img src="/icon.svg" class="logoMark" aria-hidden="true" alt=""/>Netfly</a>
 
       <div class="nav" id="nav"></div>
 
@@ -2923,6 +2977,7 @@ body.theme-bw{ --bg:#000; --bg2:#111; --text:#f5f5f5; --muted:#aaa; --accent:#ff
           </div>
         </div>
 
+        <section id="seriesCalendar" class="profileSection" aria-live="polite"></section>
         <div id="nowCard"></div>
       </section>
     </section>
@@ -3039,11 +3094,8 @@ body.theme-bw{ --bg:#000; --bg2:#111; --text:#f5f5f5; --muted:#aaa; --accent:#ff
               <div class="genreChips" id="profileGenreChips"></div>
             </div>
 
-            <div class="profileSection">
-              <div class="secHead">
-                <h3>Персонализация</h3>
-                <div class="small">Сделай профиль своим</div>
-              </div>
+            <details class="profileFold">
+              <summary>Настроить профиль</summary>
               <div class="fieldRow">
                 <label class="small" for="profileTagline">Фраза профиля</label>
                 <input id="profileTagline" type="text" maxlength="80" placeholder="Например: Люблю медленные драмы и сильные финалы" />
@@ -3054,21 +3106,27 @@ body.theme-bw{ --bg:#000; --bg2:#111; --text:#f5f5f5; --muted:#aaa; --accent:#ff
                 <div class="genreChips" id="profileManualGenreChips"></div>
                 <div class="small muted" style="margin-top:6px;">Выбери из жанров, которые есть в твоей библиотеке.</div>
               </div>
-            </div>
+            </details>
           </div>
 
           <!-- RIGHT: activity & details -->
           <div class="profileRight">
+            <details class="profileFold">
+              <summary>Статистика и оценки</summary>
             <div class="profileSection" id="profileScores"></div>
             <div class="profileSection" id="profileDeepStats"></div>
             <div class="profileSection" id="profileWatchingWeek"></div>
+            </details>
 
+            <details class="profileFold">
+              <summary>Любимые фильмы, актёры и режиссёры</summary>
             <div class="favGrid" id="profileFavGrid">
               <div class="favCard" id="favMovieCard"></div>
               <div class="favCard" id="favSeriesCard"></div>
               <div class="favCard" id="favDirectorCard"></div>
               <div class="favCard" id="favActorCard"></div>
             </div>
+            </details>
 
             <div class="twoCol">
               <div class="profileSection">
@@ -3087,7 +3145,6 @@ body.theme-bw{ --bg:#000; --bg2:#111; --text:#f5f5f5; --muted:#aaa; --accent:#ff
               </div>
             </div>
 
-            <div class="profileSection" style="margin-top:10px;"></div>
           </div>
 
         </div><!-- /.profileLayout -->
@@ -3987,6 +4044,7 @@ function loadProfile(){
     }
 
     function pathForView(viewId, opts = {}){
+      if(viewId === 'person') return `/person/${encodeURIComponent(opts.personId)}`;
       if(viewId === "movie" && opts.tmdbId && opts.type){
         return `/movie/${encodeURIComponent(opts.tmdbId)}?type=${encodeURIComponent(opts.type)}`;
       }
@@ -3995,6 +4053,7 @@ function loadProfile(){
 
     function routeFromLocation(){
       const path = window.location.pathname.replace(/\/+$/, "") || "/";
+      if(/^\/person\/\d+$/.test(path)) return {viewId:'person',opts:{personId:path.split('/')[2]}};
       if(path.startsWith("/movie/")){
         const tmdbId = decodeURIComponent(path.slice("/movie/".length));
         const type = new URLSearchParams(window.location.search).get("type") || "movie";
@@ -4021,7 +4080,7 @@ function loadProfile(){
       els.viewEval.classList.toggle("hidden", viewId !== "evaluate");
       els.viewRated.classList.toggle("hidden", viewId !== "rated");
       els.viewSearch?.classList.toggle("hidden", viewId !== "search");
-      els.viewMovie?.classList.toggle("hidden", viewId !== "movie");
+      els.viewMovie?.classList.toggle("hidden", viewId !== "movie" && viewId !== "person");
       if(els.viewNow) els.viewNow.classList.toggle("hidden", viewId !== "now");
       if(viewId === "wish"){
         els.viewWishMovies.classList.toggle("hidden", wishKindActive !== "movie");
@@ -4044,6 +4103,7 @@ function loadProfile(){
             rated: els.viewRated,
             search: els.viewSearch,
             movie: els.viewMovie,
+            person: els.viewMovie,
             now: els.viewNow,
             profile: els.viewProfile,
             settings: els.viewSettings,
@@ -4059,6 +4119,7 @@ function loadProfile(){
       if(viewId === "home") renderHome();
       if(viewId === "search") renderSearch();
       if(viewId === "movie" && opts.tmdbId && opts.type) renderMoviePage(opts.tmdbId, opts.type);
+      if(viewId === 'person') renderPersonPage(opts.personId);
       if(viewId === "rated"){
         renderRated();
         if(opts.openId) openRatedItem(opts.openId);
@@ -4992,7 +5053,11 @@ function loadProfile(){
       performSearch();
     }
 
+    let searchTimer;
+    let searchVersion = 0;
     async function performSearch() {
+      clearTimeout(searchTimer);
+      const version = ++searchVersion;
       const query = document.getElementById('tmdbSearchInput').value.trim();
       const type = document.getElementById('tmdbTypeFilter').value;
       const genre = document.getElementById('tmdbGenreFilter').value;
@@ -5012,9 +5077,10 @@ function loadProfile(){
         
         const res = await fetch(url);
         const data = await res.json();
+        if(version !== searchVersion) return;
         
         tmdbTotalPages = data.total_pages || 1;
-        const items = data.results || [];
+        const items = (data.results || []).slice().sort((a,b) => Number(a.media_type === 'person') - Number(b.media_type === 'person'));
         
         results.innerHTML = '';
         
@@ -5025,27 +5091,62 @@ function loadProfile(){
         
         items.forEach(item => {
           const card = document.createElement('div');
+          card.className = 'searchMovieCard';
           card.style.cssText = 'cursor:pointer;border-radius:8px;overflow:hidden;background:var(--card);transition:transform .2s;';
           card.addEventListener('mouseenter', () => card.style.transform = 'scale(1.05)');
           card.addEventListener('mouseleave', () => card.style.transform = 'scale(1)');
           
-          const poster = item.poster_path 
-            ? `/api/tmdb/image/w300${item.poster_path}`
-            : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="450"%3E%3Crect fill="%23333" width="300" height="450"/%3E%3Ctext x="50%25" y="50%25" fill="%23999" text-anchor="middle" dy=".3em"%3ENo poster%3C/text%3E%3C/svg%3E';
+          const poster = (item.poster_path || item.profile_path)
+            ? `/api/tmdb/image/w300${item.poster_path || item.profile_path}`
+            : null;
           
           const title = item.title || item.name || 'Без названия';
-          const year = (item.release_date || item.first_air_date || '').substring(0, 4);
+          const year = item.media_type === 'person' ? ({Acting:'Актёр',Directing:'Режиссёр'}[item.known_for_department] || item.known_for_department || 'Персона') : (item.release_date || item.first_air_date || '').substring(0, 4);
           const type = item.media_type || (item.title ? 'movie' : 'tv');
           
           card.innerHTML = `
-            <img src="${poster}" style="width:100%;aspect-ratio:2/3;object-fit:cover;" />
+            <div class="searchPoster">
+              ${poster ? '<img alt="" loading="lazy" />' : ''}
+              <div class="searchPosterFallback" ${poster ? 'hidden' : ''}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="m3 17 5-5 4 4 3-3 6 6"/><circle cx="15" cy="8" r="2"/></svg>
+                <span>Нет постера</span>
+                ${poster ? '<button type="button">↻ Повторить</button>' : ''}
+              </div>
+            </div>
             <div style="padding:8px;">
               <div style="font-size:13px;font-weight:600;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(title)}">${escapeHtml(title)}</div>
               <div class="small" style="color:var(--muted);">${year || '—'}</div>
             </div>
           `;
+
+          if(poster){
+            const image = card.querySelector('.searchPoster img');
+            const fallback = card.querySelector('.searchPosterFallback');
+            const retry = fallback.querySelector('button');
+            image.addEventListener('error', () => {
+              image.style.visibility = 'hidden';
+              fallback.hidden = false;
+              retry.disabled = false;
+              retry.textContent = '↻ Повторить';
+            });
+            image.addEventListener('load', () => {
+              image.style.visibility = '';
+              fallback.hidden = true;
+              retry.disabled = false;
+              retry.textContent = '↻ Повторить';
+            });
+            retry.addEventListener('click', event => {
+              event.stopPropagation();
+              retry.disabled = true;
+              retry.textContent = 'Загрузка…';
+              image.loading = 'eager';
+              image.src = `${poster}?retry=${Date.now()}`;
+            });
+            image.src = poster;
+          }
           
           card.addEventListener('click', () => {
+            if(item.media_type === 'person'){ goTo('person',{personId:item.id}); return; }
             goTo('movie', { tmdbId: item.id, type });
           });
           
@@ -5055,6 +5156,7 @@ function loadProfile(){
         renderPagination();
       } catch (e) {
         console.error('Search error:', e);
+        if(version !== searchVersion) return;
         results.innerHTML = '<div class="small" style="color:var(--muted);padding:20px;text-align:center;">Ошибка поиска</div>';
       }
     }
@@ -5123,6 +5225,14 @@ function loadProfile(){
       performSearch();
     });
 
+    document.getElementById('tmdbSearchInput')?.addEventListener('input', () => {
+      clearTimeout(searchTimer);
+      ++searchVersion;
+      searchTimer = setTimeout(() => {
+        tmdbCurrentPage = 1;
+        performSearch();
+      }, 300);
+    });
     document.getElementById('tmdbSearchInput')?.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
         tmdbCurrentPage = 1;
@@ -5130,6 +5240,46 @@ function loadProfile(){
       }
     });
     document.getElementById('tmdbRandomBtn')?.addEventListener('click', pickRandomTmdb);
+
+    async function openPersonByName(name){
+      try{
+        const response = await fetch(`/api/tmdb/search?query=${encodeURIComponent(name)}`);
+        if(!response.ok) throw new Error();
+        const data = await response.json();
+        const person = (data.results || []).find(item => item.media_type === 'person');
+        if(!person) throw new Error();
+        goTo('person',{personId:person.id});
+      }catch{ toast('Профиль не найден',name); }
+    }
+
+    async function renderPersonPage(personId){
+      const host = document.getElementById('moviePageContent');
+      host.innerHTML = '<p>Загружаю профиль…</p>';
+      try{
+        const response = await fetch(`/api/tmdb/person/${encodeURIComponent(personId)}`);
+        if(!response.ok) throw new Error();
+        const person = await response.json();
+        if(currentView !== 'person' || location.pathname !== `/person/${personId}`) return;
+        const credits = [...(person.combined_credits?.cast || []),...(person.combined_credits?.crew || [])];
+        const unique = new Map();
+        credits.sort((a,b)=>(b.popularity || 0)-(a.popularity || 0)).forEach(item => {
+          const key = `${item.media_type}:${item.id}`;
+          if(!unique.has(key)) unique.set(key,item);
+        });
+        host.innerHTML = `<section class="card moviePageSection"><div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;">${person.profile_path ? `<img src="/api/tmdb/image/w300${person.profile_path}" alt="${escapeHtml(person.name)}" style="width:180px;border-radius:16px;"/>` : ''}<div style="flex:1;min-width:220px"><h1>${escapeHtml(person.name)}</h1><p class="small">${escapeHtml(({Acting:'Актёр',Directing:'Режиссёр'}[person.known_for_department] || person.known_for_department || ''))}</p><p>${escapeHtml([person.birthday,person.place_of_birth].filter(Boolean).join(' · '))}</p><p style="white-space:pre-line;line-height:1.7">${escapeHtml(person.biography || 'Биография на русском пока отсутствует.')}</p></div></div></section><section class="card moviePageSection"><h3>Фильмография</h3><div id="personFilmography" class="movieSimilarGrid"></div></section>`;
+        const grid = host.querySelector('#personFilmography');
+        [...unique.values()].forEach(item => {
+          const link = document.createElement('a');
+          link.className = 'movieSimilarCard';
+          link.style.cssText = 'color:inherit;text-decoration:none';
+          link.href = pathForView('movie',{tmdbId:item.id,type:item.media_type});
+          link.innerHTML = `${item.poster_path ? `<img loading="lazy" src="/api/tmdb/image/w300${item.poster_path}" alt=""/>` : '<div class="movieSimilarFallback">Нет постера</div>'}<div>${escapeHtml(item.title || item.name || 'Без названия')}</div><p class="small">${escapeHtml(item.job || item.character || '')}</p>`;
+          link.addEventListener('click',event => {event.preventDefault();goTo('movie',{tmdbId:item.id,type:item.media_type});});
+          grid.appendChild(link);
+        });
+        if(!unique.size) grid.textContent = 'Фильмография пока отсутствует.';
+      }catch{ host.innerHTML = '<p>Не удалось загрузить профиль. Попробуй открыть его ещё раз.</p>'; }
+    }
 
     // ========= Movie Page =========
     async function renderMoviePage(tmdbId, type) {
@@ -5192,7 +5342,7 @@ function loadProfile(){
                 
                 <p style="line-height:1.6;margin-bottom:24px;">${escapeHtml(overview)}</p>
                 
-                ${director ? `<div style="margin-bottom:12px;"><strong>Режиссёр:</strong> ${escapeHtml(director.name)}</div>` : ''}
+                ${director ? `<div style="margin-bottom:12px;"><strong>Режиссёр:</strong> <a href="/person/${director.id}" style="color:inherit" onclick="event.preventDefault();goTo('person',{personId:${director.id}})">${escapeHtml(director.name)}</a></div>` : ''}
                 ${budget ? `<div style="margin-bottom:12px;"><strong>Бюджет:</strong> ${budget}</div>` : ''}
                 ${revenue ? `<div style="margin-bottom:12px;"><strong>Сборы:</strong> ${revenue}</div>` : ''}
                 
@@ -5213,11 +5363,11 @@ function loadProfile(){
               <h3>Актёры</h3>
               <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:16px;">
                 ${cast.map(actor => `
-                  <div style="text-align:center;">
+                  <a href="/person/${actor.id}" onclick="event.preventDefault();goTo('person',{personId:${actor.id}})" style="text-align:center;color:inherit;text-decoration:none;">
                     ${actor.profile_path ? `<img src="/api/tmdb/image/w185${actor.profile_path}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" style="width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:8px;margin-bottom:8px;" /><div style="display:none;width:100%;aspect-ratio:2/3;background:var(--card);border-radius:8px;margin-bottom:8px;align-items:center;justify-content:center;color:var(--muted);">No photo</div>` : '<div style="width:100%;aspect-ratio:2/3;background:var(--card);border-radius:8px;margin-bottom:8px;display:flex;align-items:center;justify-content:center;color:var(--muted);">No photo</div>'}
                     <div style="font-size:13px;font-weight:600;">${escapeHtml(actor.name)}</div>
                     <div class="small" style="color:var(--muted);">${escapeHtml(actor.character || '')}</div>
-                  </div>
+                  </a>
                 `).join('')}
               </div>
             </section>
@@ -5570,9 +5720,6 @@ range.addEventListener("input", () => {
   if(prevInt !== nextInt){
     current[c.key] = nextInt;
 
-    pill.classList.remove("bump");
-    void pill.offsetWidth;
-    pill.classList.add("bump");
     pill.textContent = String(nextInt);
 
     updateTotals();
@@ -6059,7 +6206,23 @@ document.addEventListener("click", (e) => {
       // Preferred: remove only the deleted element from DOM (no full rerender -> no flicker)
       if(softEl){
         // Remove node if it's still in DOM
-        if(softEl.parentElement){ try{ softEl.remove(); }catch(e){} }
+        if(softEl.parentElement){
+          const siblings = Array.from(softEl.parentElement.children).filter(el => el !== softEl);
+          const positions = new Map(siblings.map(el => [el, el.getBoundingClientRect()]));
+          softEl.remove();
+          if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+            siblings.forEach(el => {
+              const before = positions.get(el);
+              const after = el.getBoundingClientRect();
+              const dx = before.left - after.left;
+              const dy = before.top - after.top;
+              if(dx || dy) el.animate([
+                { transform:`translate(${dx}px, ${dy}px)` },
+                { transform:'translate(0, 0)' }
+              ], { duration:320, easing:'cubic-bezier(.22,1,.36,1)' });
+            });
+          }
+        }
 
         // Update minimal UI pieces that depend on the dataset
         renderNav();
@@ -6121,13 +6284,48 @@ document.addEventListener("click", (e) => {
       toast(wasWish ? "Удалено из очереди" : "Удалено", name);
     }
 
-    function deleteMovieConfirm(id, detailsEl){
+    function confirmMovieDeletion(name){
+      return new Promise(resolve => {
+        const dialog = document.createElement('dialog');
+        dialog.className = 'deleteConfirm';
+        dialog.setAttribute('aria-labelledby', 'deleteConfirmTitle');
+        dialog.innerHTML = `<form method="dialog"><h3 id="deleteConfirmTitle">Удалить фильм?</h3><p class="deleteConfirmName"></p><p class="deleteConfirmHint">Фильм и его оценка будут удалены из библиотеки. Это действие нельзя отменить.</p><div class="deleteConfirmActions"><button value="cancel" autofocus>Отмена</button><button class="danger" value="delete">Удалить</button></div></form>`;
+        dialog.querySelector('.deleteConfirmName').textContent = name;
+        dialog.addEventListener('close', () => {
+          const confirmed = dialog.returnValue === 'delete';
+          dialog.remove();
+          resolve(confirmed);
+        }, { once:true });
+        dialog.addEventListener('click', event => {
+          if(event.target === dialog){
+            const rect = dialog.getBoundingClientRect();
+            if(event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dialog.close('cancel');
+          }
+        });
+        document.body.appendChild(dialog);
+        dialog.showModal();
+      });
+    }
+
+    async function deleteMovieConfirm(id, detailsEl){
       const m = movies.find(x => x.id === id);
       const name = m?.name ? `«${m.name}»` : "этот элемент";
-      if(!confirm(`Удалить ${name}? Это действие нельзя отменить.`)) return;
+      if(!await confirmMovieDeletion(name)) return;
 
       // UX: animate collapse, then delete (in-place remove to prevent flicker)
       if(detailsEl){
+        if(detailsEl.parentElement?.classList.contains('posterGrid')){
+          if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+            deleteMovie(id, { softEl:detailsEl, muteAnim:true });
+          }else{
+            const animation = detailsEl.animate([
+              { opacity:1, transform:'scale(1)' },
+              { opacity:0, transform:'scale(.94)' }
+            ], { duration:180, easing:'ease-out', fill:'forwards' });
+            animation.onfinish = () => deleteMovie(id, { softEl:detailsEl, muteAnim:true });
+          }
+          return;
+        }
         detailsEl.classList.add("leaving");
         setTimeout(() => {
           animateRemoveDetails(detailsEl, () => {
@@ -6323,7 +6521,7 @@ document.addEventListener("click", (e) => {
         chip.addEventListener("click", (e) => {
           e.preventDefault();
           e.stopPropagation();
-          setFavoriteActorFromChip(a);
+          openPersonByName(a);
         });
         wrap.appendChild(chip);
       });
@@ -7488,7 +7686,35 @@ body.appendChild(actionsRow);
     }
 
 
+    let calendarRequest = 0;
+    async function renderSeriesCalendar(){
+      const requestId = ++calendarRequest;
+      const host = document.getElementById('seriesCalendar');
+      if(!host) return;
+      if(!nowState.imdbID){ host.replaceChildren(); return; }
+      host.innerHTML = '<h3>Календарь серий</h3><p class="small">Загружаю даты…</p>';
+      try{
+        const source = movies.find(m => m.id === nowState.sourceMovieId);
+        const params = new URLSearchParams({ imdb:nowState.imdbID });
+        if(source?.omdb?.tmdbId) params.set('id', source.omdb.tmdbId);
+        const response = await fetch(`/api/tmdb/calendar?${params}`);
+        const data = await response.json();
+        if(!response.ok) throw new Error(data.error);
+        if(requestId !== calendarRequest) return;
+        const ep = data.next;
+        let description = data.status === 'Ended' ? 'Сериал завершён.' : data.status === 'Canceled' ? 'Сериал закрыт.' : 'Дата следующей серии пока не объявлена.';
+        if(ep?.air_date){
+          const date = new Date(ep.air_date + 'T12:00:00');
+          description = `Сезон ${ep.season_number} · Серия ${ep.episode_number} · ${date.toLocaleDateString('ru-RU', { day:'numeric', month:'long', year:'numeric' })}`;
+        }
+        host.innerHTML = `<div class="small" style="color:var(--muted);margin-bottom:6px">Ближайшая серия</div><div title="Дата оригинального выхода по TMDB. Выход озвучки может отличаться.">${escapeHtml(description)}</div>`;
+      }catch(e){
+        if(requestId === calendarRequest){ host.innerHTML = '<h3>Календарь серий</h3>'; const message = document.createElement('p'); message.textContent = e.message || 'Не удалось загрузить даты'; host.appendChild(message); }
+      }
+    }
+
     function renderNow(){
+      renderSeriesCalendar();
       if(els.nowPick){ els.nowPick.value = nowState.title || ""; }
       updateNowAddDeleteUI();
       if(!els.nowCard) return;
@@ -7556,8 +7782,8 @@ if(!nowState.imdbID){
 
       const posterBox = document.createElement("div");
       posterBox.className = "posterBigImg";
-      posterBox.style.width = "180px";
-      posterBox.style.height = "270px";
+      posterBox.style.width = "110px";
+      posterBox.style.height = "165px";
       if(nowState.posterUrl){
         const img = document.createElement("img");
         img.src = nowState.posterUrl;
@@ -7579,10 +7805,6 @@ if(!nowState.imdbID){
         <div style="min-width:0">
           <p class="nowTitle">${escapeHtml(nowState.title || "Сериал")}</p>
           <div class="nowSub">${total ? `Прогресс: ${watched}/${total} (${pct ?? 0}%)` : `Отмечено серий: ${watched}`}</div>
-          ${miniStatsHtml}
-        </div>
-        <div class="btns" style="justify-content:flex-end">
-          <button type="button" id="nowResetBtn" class="danger">Сбросить</button>
         </div>
       `;
 
@@ -7595,6 +7817,12 @@ if(!nowState.imdbID){
       const controls = document.createElement("div");
       controls.className = "sessionRow";
       controls.innerHTML = `
+        <div class="btns" style="justify-content:flex-start;">
+          <button type="button" class="primary" id="nowNextBtn"${next ? "" : " disabled"}>Следующая серия${next ? ` · S${next.season} E${next.episode}` : ''}</button>
+        </div>
+        <details class="nowPreferences" style="width:100%;margin-top:12px;">
+        <summary style="cursor:pointer;color:var(--muted);font-size:12px;">Настройки и статистика просмотра</summary>
+        <div style="margin:12px 0;">${miniStatsHtml}</div>
         <div class="inline" style="gap:10px;">
           <label class="small" style="margin:0;">Мин/серия</label>
           <input id="nowRuntime" type="number" min="1" max="400" style="width:110px;" value="${escapeHtml(nowState.runtimeMin ?? "")}" placeholder="45" />
@@ -7603,9 +7831,8 @@ if(!nowState.imdbID){
           <label class="small" style="margin:0;">Цель недели (серий)</label>
           <input id="nowGoal" type="number" min="0" max="99" style="width:110px;" value="${escapeHtml(nowState.goalEps ?? 0)}" />
         </div>
-        <div class="btns" style="justify-content:flex-end;">
-          <button type="button" class="primary" id="nowNextBtn"${next ? "" : " disabled"}>Следующая серия</button>
-        </div>
+        <button type="button" id="nowResetBtn" class="danger" style="margin-top:12px;">Сбросить прогресс</button>
+        </details>
       `;
 
       meta.appendChild(head);

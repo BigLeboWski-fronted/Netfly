@@ -446,6 +446,45 @@ app.get("/api/tmdb/random", requireAuth, async (req, res) => {
   }
 });
 
+app.get('/api/tmdb/calendar', requireAuth, async (req, res) => {
+  try {
+    const { imdb, id } = req.query;
+    if(!id && !/^tt\d+$/.test(String(imdb || ''))) return res.status(400).json({ error:'Не удалось определить сериал' });
+    const key = cache.generateKey('calendar', { imdb, id });
+    const cached = cache.get(key);
+    if(cached) return res.json(cached);
+    async function request(endpoint){
+      const response = await fetch(`${TMDB_BASE}${endpoint}${endpoint.includes('?') ? '&' : '?'}api_key=${TMDB_KEY}&language=ru-RU`);
+      if(!response.ok) throw new Error('TMDB недоступен');
+      return response.json();
+    }
+    let tvId = id;
+    if(!tvId){
+      const found = await request(`/find/${encodeURIComponent(imdb)}?external_source=imdb_id`);
+      tvId = found.tv_results?.[0]?.id;
+    }
+    if(!tvId) return res.status(404).json({ error:'Сериал не найден в TMDB' });
+    const tv = await request(`/tv/${encodeURIComponent(tvId)}`);
+    const result = { id:tv.id, name:tv.name, status:tv.status, next:tv.next_episode_to_air || null };
+    cache.set(key, result, 60 * 60 * 1000);
+    res.json(result);
+  } catch(e){ res.status(502).json({ error:e.message }); }
+});
+
+app.get('/api/tmdb/person/:id', requireAuth, async (req, res) => {
+  try{
+    if(!/^\d+$/.test(req.params.id)) return res.status(400).json({error:'Некорректный ID'});
+    const key = `person:${req.params.id}`;
+    const cached = cache.get(key);
+    if(cached) return res.json(cached);
+    const response = await fetch(`${TMDB_BASE}/person/${req.params.id}?api_key=${TMDB_KEY}&language=ru-RU&append_to_response=combined_credits`);
+    if(!response.ok) return res.status(response.status).json({error:'Профиль не найден'});
+    const data = await response.json();
+    cache.set(key,data);
+    res.json(data);
+  }catch(e){ res.status(502).json({error:'Не удалось загрузить профиль'}); }
+});
+
 // TMDB image proxy (to avoid CORS/403 issues)
 app.get("/api/tmdb/image/*", requireAuth, async (req, res) => {
   const imagePath = req.params[0];
