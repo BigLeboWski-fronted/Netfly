@@ -1442,6 +1442,35 @@ body::before{
   box-shadow: 0 18px 60px rgba(0,0,0,.35), var(--glow);
 }
 
+/* Movie details hero: keep the backdrop and darkening layer inside the hero. */
+.movieHero{
+  position:relative;
+  min-height:400px;
+  overflow:hidden;
+  isolation:isolate;
+}
+.movieHeroBackdrop,
+.movieHeroShade{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+}
+.movieHeroBackdrop{
+  z-index:0;
+  background-size:cover;
+  background-position:center top;
+  filter:blur(15px);
+  transform:scale(1.1);
+}
+.movieHeroShade{
+  z-index:1;
+  background:rgba(0,0,0,.7);
+}
+.movieHeroContent{
+  position:relative;
+  z-index:2;
+}
+
 /* Buttons feel */
 button{
   transition: transform .12s var(--easeOut), filter .12s var(--easeOut), background .12s var(--easeOut);
@@ -1650,6 +1679,7 @@ body.cinemaNight{
 }
 
 body.cinemaNight::after{
+  display:none;
   content:"";
   position: fixed;
   inset: 0;
@@ -3768,7 +3798,35 @@ function loadProfile(){
       });
     }
 
+    function pathForView(viewId, opts = {}){
+      if(viewId === "movie" && opts.tmdbId && opts.type){
+        return `/movie/${encodeURIComponent(opts.tmdbId)}?type=${encodeURIComponent(opts.type)}`;
+      }
+      return viewId === "home" ? "/" : `/${viewId}`;
+    }
+
+    function routeFromLocation(){
+      const path = window.location.pathname.replace(/\/+$/, "") || "/";
+      if(path.startsWith("/movie/")){
+        const tmdbId = decodeURIComponent(path.slice("/movie/".length));
+        const type = new URLSearchParams(window.location.search).get("type") || "movie";
+        return { viewId: "movie", opts: { tmdbId, type } };
+      }
+      const viewId = path === "/" ? "home" : path.slice(1);
+      const valid = ["home", "evaluate", "rated", "wish", "search", "now", "profile", "settings"];
+      return { viewId: valid.includes(viewId) ? viewId : "home", opts: {} };
+    }
+
+    function navigateFromLocation(){
+      const route = routeFromLocation();
+      goTo(route.viewId, { ...route.opts, fromHistory: true });
+    }
+
     function goTo(viewId, opts = {}){
+      if(!opts.fromHistory){
+        const { fromHistory, ...state } = opts;
+        history.pushState({ viewId, ...state }, "", pathForView(viewId, opts));
+      }
       currentView = viewId;
 
       els.viewHome.classList.toggle("hidden", viewId !== "home");
@@ -4849,10 +4907,10 @@ function loadProfile(){
         const similar = (movie.similar?.results || []).slice(0, 6);
         
         container.innerHTML = `
-          <div style="position:relative;min-height:400px;overflow:hidden;">
-            ${backdrop ? `<div style="position:absolute;inset:0;background:url(${backdrop});background-size:cover;background-position:center top;filter:blur(15px);transform:scale(1.1);"></div>` : ''}
-            <div style="position:absolute;inset:0;background:rgba(0,0,0,.7);"></div>
-            <div style="position:relative;max-width:1200px;margin:0 auto;padding:40px 20px;display:flex;gap:30px;flex-wrap:wrap;">
+          <div class="movieHero">
+            ${backdrop ? `<div class="movieHeroBackdrop" style="background-image:url('${backdrop}');"></div>` : ''}
+            <div class="movieHeroShade"></div>
+            <div class="movieHeroContent" style="max-width:1200px;margin:0 auto;padding:40px 20px;display:flex;gap:30px;flex-wrap:wrap;">
               ${poster ? `<img src="${poster}" style="width:300px;border-radius:12px;box-shadow:var(--shadow);" />` : ''}
               <div style="flex:1;min-width:300px;">
                 <h1 style="margin:0 0 8px;font-size:32px;">${escapeHtml(title)}</h1>
@@ -7881,6 +7939,8 @@ if(finishToRated){
     }
 
   function init(){
+  const initialRoute = routeFromLocation();
+  currentView = initialRoute.viewId;
   renderNav();
   renderSliders();
   updateTotals();
@@ -7992,6 +8052,8 @@ if(finishToRated){
   }
 
   init();
+  navigateFromLocation();
+  window.addEventListener("popstate", navigateFromLocation);
 
 
 

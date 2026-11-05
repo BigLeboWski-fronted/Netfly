@@ -667,6 +667,11 @@ app.post("/api/account/send-password-code", requireAuth, async (req, res) => {
   }
 });
 
+// SPA fallback: allow direct browser URLs such as /rated and /movie/123.
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/index.html"));
+});
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 
 const PORT = process.env.PORT || 3000;
