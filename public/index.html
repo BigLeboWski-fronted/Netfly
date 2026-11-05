@@ -270,6 +270,29 @@ body{
   max-width: 740px;
   line-height: 1.5;
 }
+.homeDashboard{
+  display:grid;
+  grid-template-columns:repeat(4, minmax(0, 1fr));
+  gap:12px;
+  margin:8px 0 18px;
+}
+.homeDashCard{
+  min-height:132px;
+  padding:16px;
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:18px;
+  background:linear-gradient(145deg, rgba(255,255,255,.09), rgba(255,255,255,.035));
+  cursor:pointer;
+  transition:transform .16s ease, border-color .16s ease, background .16s ease;
+}
+.homeDashCard:hover{ transform:translateY(-3px); border-color:rgba(255,255,255,.25); background:rgba(255,255,255,.10); }
+.homeDashCard.static{ cursor:default; }
+.homeDashLabel{ color:var(--muted); font-size:12px; font-weight:800; margin-bottom:12px; }
+.homeDashValue{ font-size:18px; font-weight:950; line-height:1.15; word-break:break-word; }
+.homeDashMeta{ margin-top:8px; color:var(--muted2); font-size:12px; line-height:1.35; }
+.homeDashIcon{ font-size:24px; margin-bottom:10px; }
+@media (max-width: 900px){ .homeDashboard{ grid-template-columns:repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px){ .homeDashboard{ grid-template-columns:1fr; } .homeDashCard{ min-height:108px; } }
 .sectionTitle{
   margin: 16px 0 10px;
   font-size: 16px;
@@ -640,6 +663,19 @@ button:active{ transform: translateY(0px) scale(.99); }
 }
 @media (max-width: 620px){ .filters{grid-template-columns: 1fr;} }
 .filterRow{display:flex; flex-direction:column; gap: 6px;}
+.filtersToggle{ margin-top:12px; padding:9px 13px; border:1px solid rgba(255,255,255,.12); border-radius:10px; background:rgba(255,255,255,.05); color:var(--muted); cursor:pointer; font-weight:800; }
+.filtersToggle:hover{ background:rgba(255,255,255,.10); color:var(--text); }
+.tmdbPeopleFilter{
+  background:rgba(255,255,255,.04) !important;
+  color:var(--text) !important;
+  border:1px solid rgba(255,255,255,.10) !important;
+  border-radius:14px !important;
+  padding:12px !important;
+  min-height:58px;
+  outline:none;
+  color-scheme:dark;
+}
+.tmdbPeopleFilter::placeholder{ color:var(--text) !important; opacity:.72; }
 .inline{display:flex; align-items:center; gap: 10px; flex-wrap:wrap;}
 .inline input[type="checkbox"]{transform: translateY(1px); accent-color: var(--accent);}
 
@@ -791,8 +827,8 @@ details[open] .itemBody{
 .actionsRow{margin-top: 10px; display:flex; justify-content:flex-end; gap: 10px; flex-wrap:wrap;}
 
 .thumb{
-  width: 46px;
-  height: 70px;
+  width: 62px;
+  height: 92px;
   border-radius: 12px;
   border: 1px solid rgba(255,255,255,.10);
   background: rgba(255,255,255,.05);
@@ -806,6 +842,29 @@ details[open] .itemBody{
   text-align:center;
 }
 .thumb img{ width:100%; height:100%; object-fit: cover; display:block; }
+.viewToggle{ display:inline-flex; gap:4px; padding:3px; border:1px solid rgba(255,255,255,.10); border-radius:10px; background:rgba(255,255,255,.04); }
+.viewToggle button{ border:0; background:transparent; color:var(--muted); padding:6px 9px; border-radius:7px; cursor:pointer; font-size:12px; }
+.viewToggle button.active{ background:rgba(255,255,255,.14); color:var(--text); }
+.posterGrid{ display:grid !important; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:14px !important; }
+.posterGrid details.item{ height:auto; align-self:start; }
+.posterGrid details.item summary{ height:auto; display:block; padding:10px; }
+.posterGrid .sumLeft{ display:block; }
+.posterGrid .thumb{ width:100%; height:235px; margin-bottom:10px; }
+.posterGrid .sumText{ min-height:86px; display:flex; flex-direction:column; }
+.posterGrid .itemBody > .posterBig{ display:none; }
+.posterGrid .titleLine{ height:80px; min-height:80px; align-content:flex-start; overflow:hidden; }
+.posterGrid .metaLine{ margin-top:auto; align-items:stretch; gap:6px; }
+.posterGrid .metaLine .chip{ width:100%; min-height:42px; display:flex; align-items:center; justify-content:center; text-align:center; line-height:1.2; overflow:hidden; }
+.posterGrid .metaLine .chip b{ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.posterGrid .sumRight{ position:absolute; top:10px; right:10px; }
+.posterGrid .quickActions{ background:transparent; border-radius:0; padding:0; }
+.posterGrid .arrow{ display:none; }
+@media (max-width:520px){ .posterGrid{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px !important; } .posterGrid .thumb{ height:190px; } }
+@media (max-width: 520px){
+  .thumb{ width:54px; height:80px; }
+  details.item summary{ gap:8px; padding:10px; }
+  .sumLeft{ gap:9px; }
+}
 
 .posterBig{
   margin-top: 10px;
@@ -855,6 +914,19 @@ details[open] .itemBody{
 
 /* Quick actions */
 .quickActions{ display:flex; gap: 8px; align-items:center; }
+.quickActions .iconBtn{
+  width:30px;
+  height:30px;
+  border-radius:10px;
+  font-size:14px;
+  border-color:rgba(255,255,255,.22);
+  background:rgba(20,20,22,.58);
+  backdrop-filter:blur(6px);
+}
+.quickActions .iconBtn:hover{ background:rgba(255,255,255,.16); }
+.quickActions .iconBtn.favOn{ background:rgba(255,255,255,.20); }
+.quickActions .iconBtn.dangerMini{ background:rgba(20,20,22,.58); border-color:rgba(255,255,255,.22); }
+.quickActions .iconBtn.dangerMini:hover{ background:rgba(255,255,255,.16); }
 .iconBtn{
   width: 38px;
   height: 38px;
@@ -991,7 +1063,7 @@ details.item.removing{
 }
 details.item{ animation: fadeUp .18s ease both; }
 .recentCard{ animation: fadeUp .18s ease both; }
-.iconBtn.pulse{ animation: favPulse .18s ease; }
+.iconBtn.pulse{ animation:none; }
 
 @media (prefers-reduced-motion: reduce){
   *, *::before, *::after{
@@ -1470,6 +1542,26 @@ body::before{
   position:relative;
   z-index:2;
 }
+.movieHeroPoster{
+  width:min(300px, 42vw);
+  align-self:flex-start;
+  border-radius:18px;
+  box-shadow:0 24px 70px rgba(0,0,0,.55);
+  border:1px solid rgba(255,255,255,.16);
+}
+.movieHeroInfo{ flex:1; min-width:300px; align-self:center; }
+.movieHeroInfo h1{ margin:0 0 8px; font-size:clamp(30px, 5vw, 54px); line-height:1.02; }
+.moviePageSection{ max-width:1200px; margin:20px auto; }
+.moviePageSection h3{ margin:0 0 14px; font-size:20px; }
+.moviePageSection.card{ padding:20px; }
+.moviePersonalRating{ margin-top:18px; padding:14px; border:1px solid rgba(255,255,255,.16); border-radius:16px; background:rgba(255,255,255,.08); }
+.moviePersonalRating strong{ font-size:22px; }
+.movieSimilarGrid{ display:grid; grid-template-columns:repeat(6, minmax(0,1fr)); gap:12px; }
+.movieSimilarCard{ min-width:0; cursor:pointer; }
+.movieSimilarCard img,.movieSimilarFallback{ width:100%; aspect-ratio:2/3; object-fit:cover; border-radius:12px; background:rgba(255,255,255,.08); display:block; }
+.movieSimilarCard div{ margin-top:7px; font-size:12px; font-weight:800; line-height:1.2; }
+@media(max-width:900px){ .movieSimilarGrid{ grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media(max-width:520px){ .movieHeroPoster{ width:180px; margin:0 auto; } .movieHeroInfo{ min-width:0; } .movieHeroContent{ padding:26px 14px !important; } .movieSimilarGrid{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
 
 /* Buttons feel */
 button{
@@ -1517,11 +1609,14 @@ button:active{ transform: translateY(1px) scale(.99); }
 
 /* View animation */
 .view{
-  animation: viewIn .18s var(--easeOut) both;
+  animation:none;
+}
+.view.viewTransition{
+  animation:viewIn .28s var(--easeOut) both;
 }
 @keyframes viewIn{
-  from{ opacity:0; transform: translateY(6px); }
-  to{ opacity:1; transform: translateY(0); }
+  from{ opacity:0; transform: translateY(12px); filter:blur(2px); }
+  to{ opacity:1; transform: translateY(0); filter:blur(0); }
 }
 
 /* Modal polish */
@@ -2269,6 +2364,19 @@ body::before{
   z-index:-1;
 }
 
+/* User-selectable themes */
+body.theme-netflix{ --bg:#090909; --bg2:#141414; --text:#f5f5f5; --muted:#a9a9a9; --accent:#e50914; --border:rgba(255,255,255,.12); background:#090909 !important; }
+body.theme-netflix .topbar{ background:rgba(9,9,9,.90); }
+body.theme-netflix .primary, body.theme-netflix button.primary{ background:#e50914 !important; border-color:#e50914 !important; color:#fff !important; box-shadow:0 8px 24px rgba(229,9,20,.22) !important; }
+body.theme-netflix .red, body.theme-netflix .badgeRed{ color:#ff5962 !important; }
+
+body.theme-cinema{ --bg:#100d0b; --bg2:#1d1510; --text:#fff4df; --muted:#c6ad8e; --accent:#d49a52; --border:rgba(255,210,150,.18); background:radial-gradient(900px 500px at 50% 0%,rgba(188,108,35,.20),transparent 70%),#100d0b !important; }
+body.theme-cinema .topbar{ background:rgba(28,17,10,.90); }
+body.theme-cinema .card, body.theme-cinema details.item{ background:rgba(78,47,25,.22); border-color:rgba(255,196,120,.18); }
+body.theme-cinema .primary, body.theme-cinema button.primary{ background:#a9682f !important; border-color:#d49a52 !important; color:#fff4df !important; }
+
+body.theme-bw{ --bg:#000; --bg2:#111; --text:#f5f5f5; --muted:#aaa; --accent:#fff; background:#000 !important; }
+
 /* ===== Auth screen ===== */
 #authScreen{
   position:fixed;
@@ -2482,6 +2590,7 @@ body::before{
         <h1 class="homeTitle">Net<span class="red">fly</span></h1>
         <div class="homeSub">Твой личный трекер фильмов и сериалов: оценивай, сохраняй “буду смотреть”, собирай избранное и находи новые идеи.</div>
       </div>
+      <div id="homeDashboard" class="homeDashboard"></div>
 
       <div class="card">
         <div class="sectionTitle">Последние оценённые</div>
@@ -2585,6 +2694,9 @@ body::before{
             <select id="tmdbYearFilter" style="flex:1;min-width:120px;">
               <option value="">Все годы</option>
             </select>
+
+            <input id="tmdbDirectorFilter" class="tmdbPeopleFilter" placeholder="Режиссёр" style="flex:1;min-width:120px;" />
+            <input id="tmdbActorFilter" class="tmdbPeopleFilter" placeholder="Актёр" style="flex:1;min-width:120px;" />
             
             <select id="tmdbSortFilter" style="flex:1;min-width:120px;">
               <option value="popularity.desc">Популярные</option>
@@ -2594,6 +2706,7 @@ body::before{
           </div>
           
           <button id="tmdbSearchBtn" class="primary" type="button">Искать</button>
+          <button id="tmdbRandomBtn" type="button">🎲 Случайный фильм</button>
         </div>
         
         <div id="tmdbResults" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;"></div>
@@ -2612,6 +2725,10 @@ body::before{
         <div class="listHeader">
           <div class="listTop">
             <h2>Оценённые</h2>
+            <div class="viewToggle" aria-label="Вид списка">
+              <button type="button" class="viewModeBtn" data-list="rated" data-mode="grid">▦ Сетка</button>
+              <button type="button" class="viewModeBtn" data-list="rated" data-mode="list">☷ Список</button>
+            </div>
             <button class="danger" id="clearAllRatedBtn" type="button">Очистить оценённые</button>
           </div>
 
@@ -2633,7 +2750,9 @@ body::before{
             </div>
           </div>
 
-          <div class="filters">
+          <button type="button" id="filtersToggle" class="filtersToggle" aria-expanded="false">＋ Фильтры</button>
+
+          <div class="filters filterExtra hidden">
             <div class="filterRow">
               <label for="minAvg">Минимальная оценка</label>
               <select id="minAvg">
@@ -2652,6 +2771,34 @@ body::before{
                 <input id="onlyFav" type="checkbox" />
                 <label for="onlyFav" style="margin:0; color:var(--muted); font-size:12px;">Только избранное</label>
               </div>
+            </div>
+          </div>
+
+          <div class="filters filterExtra hidden">
+            <div class="filterRow">
+              <label for="yearFilter">Год</label>
+              <input id="yearFilter" type="number" min="1888" max="2100" placeholder="например: 2008" />
+            </div>
+            <div class="filterRow">
+              <label for="genreFilter">Жанр</label>
+              <input id="genreFilter" type="text" placeholder="например: драма" />
+            </div>
+            <div class="filterRow">
+              <label for="directorFilter">Режиссёр</label>
+              <input id="directorFilter" type="text" placeholder="например: Нолан" />
+            </div>
+            <div class="filterRow">
+              <label for="actorFilter">Актёр</label>
+              <input id="actorFilter" type="text" placeholder="например: Бэйл" />
+            </div>
+            <div class="filterRow">
+              <label for="statusFilter">Статус</label>
+              <select id="statusFilter">
+                <option value="">Все статусы</option>
+                <option value="watched">Оценено</option>
+                <option value="rewatch">Пересматриваю</option>
+                <option value="dropped">Бросил</option>
+              </select>
             </div>
           </div>
 
@@ -2676,6 +2823,10 @@ body::before{
         <div class="listHeader">
           <div class="listTop">
             <h2>Буду смотреть</h2>
+            <div class="viewToggle" aria-label="Вид списка">
+              <button type="button" class="viewModeBtn" data-list="wish" data-mode="grid">▦ Сетка</button>
+              <button type="button" class="viewModeBtn" data-list="wish" data-mode="list">☷ Список</button>
+            </div>
             <div class="segmented wishSegment">
               <button type="button" class="segBtn wishKindBtn" data-kind="movie">Фильмы</button>
               <button type="button" class="segBtn wishKindBtn" data-kind="series">Сериалы</button>
@@ -2704,6 +2855,10 @@ body::before{
         <div class="listHeader">
           <div class="listTop">
             <h2>Буду смотреть</h2>
+            <div class="viewToggle" aria-label="Вид списка">
+              <button type="button" class="viewModeBtn" data-list="wish" data-mode="grid">▦ Сетка</button>
+              <button type="button" class="viewModeBtn" data-list="wish" data-mode="list">☷ Список</button>
+            </div>
             <div class="segmented wishSegment">
               <button type="button" class="segBtn wishKindBtn" data-kind="movie">Фильмы</button>
               <button type="button" class="segBtn wishKindBtn" data-kind="series">Сериалы</button>
@@ -2801,6 +2956,20 @@ body::before{
         <div class="settingsGroup">
           <div class="settingsRow">
             <div class="settingsRowLabel">
+              <strong>Тема оформления</strong>
+              <span>Выбери настроение интерфейса</span>
+            </div>
+            <select id="themeSelect" style="width:180px;">
+              <option value="netflix">Netflix</option>
+              <option value="cinema">Кинотеатр</option>
+              <option value="bw">Чёрно-белая</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="settingsGroup">
+          <div class="settingsRow">
+            <div class="settingsRowLabel">
               <strong>Киноночь</strong>
               <span>Тёплый приглушённый режим</span>
             </div>
@@ -2891,6 +3060,7 @@ body::before{
           <!-- RIGHT: activity & details -->
           <div class="profileRight">
             <div class="profileSection" id="profileScores"></div>
+            <div class="profileSection" id="profileDeepStats"></div>
             <div class="profileSection" id="profileWatchingWeek"></div>
 
             <div class="favGrid" id="profileFavGrid">
@@ -3158,7 +3328,13 @@ body::before{
       sort: document.getElementById("sort"),
       minAvg: document.getElementById("minAvg"),
       tagFilter: document.getElementById("tagFilter"),
+      yearFilter: document.getElementById("yearFilter"),
+      genreFilter: document.getElementById("genreFilter"),
+      directorFilter: document.getElementById("directorFilter"),
+      actorFilter: document.getElementById("actorFilter"),
+      statusFilter: document.getElementById("statusFilter"),
       onlyFav: document.getElementById("onlyFav"),
+      filtersToggle: document.getElementById("filtersToggle"),
       clearAllRatedBtn: document.getElementById("clearAllRatedBtn"),
       prevPageBtn: document.getElementById("prevPageBtn"),
       nextPageBtn: document.getElementById("nextPageBtn"),
@@ -3235,6 +3411,18 @@ body::before{
     function saveCinemaNight(on){
       localStorage.setItem(CINEMA_KEY, on ? "1" : "0");
     }
+
+    const THEME_KEY = "netfly_theme_v1";
+    const THEMES = ["netflix", "cinema", "bw"];
+    function applyTheme(theme){
+      const selected = THEMES.includes(theme) ? theme : "bw";
+      [...THEMES, "light"].forEach(name => document.body.classList.remove(`theme-${name}`));
+      document.body.classList.add(`theme-${selected}`);
+      const select = document.getElementById("themeSelect");
+      if(select) select.value = selected;
+    }
+    function loadTheme(){ return localStorage.getItem(THEME_KEY) || "bw"; }
+    function saveTheme(theme){ localStorage.setItem(THEME_KEY, theme); }
 
     // Basic utility helpers
     function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
@@ -3847,6 +4035,24 @@ function loadProfile(){
       els.profileBtn.classList.toggle("active", viewId === "profile");
       document.getElementById("settingsBtn")?.classList.toggle("active", viewId === "settings");
       if(els.viewSettings) els.viewSettings.classList.toggle("hidden", viewId !== "settings");
+
+      const activeView = viewId === "wish"
+        ? (wishKindActive === "series" ? els.viewWishSeries : els.viewWishMovies)
+        : ({
+            home: els.viewHome,
+            evaluate: els.viewEval,
+            rated: els.viewRated,
+            search: els.viewSearch,
+            movie: els.viewMovie,
+            now: els.viewNow,
+            profile: els.viewProfile,
+            settings: els.viewSettings,
+          }[viewId]);
+      if(activeView){
+        activeView.classList.remove("viewTransition");
+        void activeView.offsetWidth;
+        activeView.classList.add("viewTransition");
+      }
 
       renderNav();
 
@@ -4626,6 +4832,40 @@ function loadProfile(){
         els.profileScores.appendChild(insight);
       }
 
+      if(document.getElementById("profileDeepStats")){
+        const host = document.getElementById("profileDeepStats");
+        const byYear = {};
+        const actorCounts = {};
+        const genreCounts = {};
+        const countryCounts = {};
+        let totalMinutes = 0;
+        rated.forEach(m => {
+          const year = m.year || "Без года";
+          const score = computeScores(m.scores).final;
+          byYear[year] ||= { sum:0, count:0 };
+          byYear[year].sum += score; byYear[year].count += 1;
+          const omdb = m.omdb || {};
+          const runtime = parseInt(String(omdb.runtime || "").match(/\d+/)?.[0] || "0", 10);
+          totalMinutes += runtime;
+          String(omdb.country || "").split(",").map(x => x.trim()).filter(Boolean).forEach(x => countryCounts[x] = (countryCounts[x] || 0) + 1);
+          String(omdb.genre || "").split(",").map(x => x.trim()).filter(Boolean).forEach(x => genreCounts[x] = (genreCounts[x] || 0) + 1);
+          (Array.isArray(omdb.actors) ? omdb.actors : []).forEach(x => actorCounts[x] = (actorCounts[x] || 0) + 1);
+        });
+        const topEntries = obj => Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0,5);
+        const yearText = Object.entries(byYear).sort((a,b)=>String(a[0]).localeCompare(String(b[0]))).map(([y,v]) => `${y}: ${formatFinalScore(v.sum/v.count)}`).join(" · ") || "—";
+        const chips = entries => entries.length ? entries.map(([name,count]) => `<span class="chip">${escapeHtml(name)} <b>×${count}</b></span>`).join("") : "<span class='small'>—</span>";
+        host.innerHTML = `
+          <div class="secHead"><h3>Расширенная статистика</h3><div class="small">По твоей библиотеке</div></div>
+          <div class="favStats">
+            <div class="favStat">Просмотрено: <b>${rated.length}</b></div>
+            <div class="favStat">Время просмотра: <b>${formatMinutes(totalMinutes)}</b></div>
+          </div>
+          <div class="textBlock"><div class="k">Любимые жанры</div><div class="tagsInline">${chips(topEntries(genreCounts))}</div></div>
+          <div class="textBlock"><div class="k">Любимые актёры</div><div class="tagsInline">${chips(topEntries(actorCounts))}</div></div>
+          <div class="textBlock"><div class="k">Фильмы по странам</div><div class="tagsInline">${chips(topEntries(countryCounts))}</div></div>
+          <div class="textBlock"><div class="k">Средняя оценка по годам</div><div class="v">${escapeHtml(yearText)}</div></div>`;
+      }
+
       // Genres
       const top = getTopGenres(5);
       els.profileGenreChips.innerHTML = "";
@@ -4856,6 +5096,28 @@ function loadProfile(){
       container.appendChild(next);
     }
 
+    async function pickRandomTmdb(){
+      const btn = document.getElementById('tmdbRandomBtn');
+      const original = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Ищу…';
+      try{
+        const params = new URLSearchParams({
+          type: document.getElementById('tmdbTypeFilter').value || 'movie',
+          genre: document.getElementById('tmdbGenreFilter').value,
+          year: document.getElementById('tmdbYearFilter').value,
+          sort: document.getElementById('tmdbSortFilter').value,
+          director: document.getElementById('tmdbDirectorFilter').value.trim(),
+          actor: document.getElementById('tmdbActorFilter').value.trim(),
+        });
+        const res = await fetch(`/api/tmdb/random?${params}`);
+        const data = await res.json();
+        if(!res.ok) throw new Error(data.error || 'Ничего не найдено');
+        goTo('movie', { tmdbId: data.id, type: data.media_type || (data.title ? 'movie' : 'tv') });
+      }catch(e){ toast('Не удалось выбрать фильм', e.message); }
+      finally{ btn.disabled = false; btn.textContent = original; }
+    }
+
     document.getElementById('tmdbSearchBtn')?.addEventListener('click', () => {
       tmdbCurrentPage = 1;
       performSearch();
@@ -4867,6 +5129,7 @@ function loadProfile(){
         performSearch();
       }
     });
+    document.getElementById('tmdbRandomBtn')?.addEventListener('click', pickRandomTmdb);
 
     // ========= Movie Page =========
     async function renderMoviePage(tmdbId, type) {
@@ -4905,15 +5168,18 @@ function loadProfile(){
         const trailer = (movie.videos?.results || []).find(v => v.type === 'Trailer' && v.site === 'YouTube');
         
         const similar = (movie.similar?.results || []).slice(0, 6);
+        const personalMovie = movies.find(m => normalize(m.name) === normalize(title) && (m.status || "watched") === "watched");
+        const wishMovie = movies.find(m => normalize(m.name) === normalize(title) && (m.status || "watched") === "wish");
+        const personalScore = personalMovie ? computeScores(personalMovie.scores).final : null;
         
         container.innerHTML = `
           <div class="movieHero">
             ${backdrop ? `<div class="movieHeroBackdrop" style="background-image:url('${backdrop}');"></div>` : ''}
             <div class="movieHeroShade"></div>
             <div class="movieHeroContent" style="max-width:1200px;margin:0 auto;padding:40px 20px;display:flex;gap:30px;flex-wrap:wrap;">
-              ${poster ? `<img src="${poster}" style="width:300px;border-radius:12px;box-shadow:var(--shadow);" />` : ''}
-              <div style="flex:1;min-width:300px;">
-                <h1 style="margin:0 0 8px;font-size:32px;">${escapeHtml(title)}</h1>
+              ${poster ? `<img class="movieHeroPoster" src="${poster}" alt="${escapeHtml(title)}" />` : ''}
+              <div class="movieHeroInfo">
+                <h1>${escapeHtml(title)}</h1>
                 ${originalTitle !== title ? `<div style="color:var(--muted);margin-bottom:16px;">${escapeHtml(originalTitle)}</div>` : ''}
                 
                 <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
@@ -4930,13 +5196,20 @@ function loadProfile(){
                 ${budget ? `<div style="margin-bottom:12px;"><strong>Бюджет:</strong> ${budget}</div>` : ''}
                 ${revenue ? `<div style="margin-bottom:12px;"><strong>Сборы:</strong> ${revenue}</div>` : ''}
                 
-                <button class="primary" id="rateMovieBtn" style="margin-top:20px;font-size:16px;padding:12px 24px;">⭐ Оценить фильм</button>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;">
+                  ${personalMovie ? '' : '<button class="primary" id="rateMovieBtn" style="font-size:16px;padding:12px 24px;">⭐ Оценить фильм</button>'}
+                  ${wishMovie ? '<span class="tagPill" style="align-self:center;padding:10px 14px;">✓ В очереди</span>' : '<button id="movieAddWishBtn" type="button" style="font-size:16px;padding:12px 24px;">+ В буду смотреть</button>'}
+                </div>
+                <div class="moviePersonalRating">
+                  <div class="homeDashLabel">Моя оценка</div>
+                  ${personalMovie ? `<strong>${formatFinalScore(personalScore)}</strong>` : `<div class="homeDashMeta">Ты ещё не добавлял этот фильм в свою библиотеку.</div>`}
+                </div>
               </div>
             </div>
           </div>
           
           ${cast.length ? `
-            <section class="card" style="max-width:1200px;margin:20px auto;">
+            <section class="card moviePageSection">
               <h3>Актёры</h3>
               <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:16px;">
                 ${cast.map(actor => `
@@ -4951,7 +5224,7 @@ function loadProfile(){
           ` : ''}
           
           ${trailer ? `
-            <section class="card" style="max-width:1200px;margin:20px auto;">
+            <section class="card moviePageSection">
               <h3>Трейлер</h3>
               <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:8px;background:#000;">
                 <iframe src="https://www.youtube.com/embed/${trailer.key}" style="position:absolute;top:0;left:0;width:100%;height:100%;" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
@@ -4960,20 +5233,17 @@ function loadProfile(){
           ` : ''}
           
           ${similar.length ? `
-            <section class="card" style="max-width:1200px;margin:20px auto;">
+            <section class="card moviePageSection">
               <h3>Похожие</h3>
-              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;">
+              <div class="movieSimilarGrid">
                 ${similar.map(s => {
                   const sPoster = s.poster_path ? `/api/tmdb/image/w300${s.poster_path}` : '';
                   const sTitle = s.title || s.name || 'Без названия';
                   const sYear = (s.release_date || s.first_air_date || '').substring(0, 4);
                   return `
-                    <div style="cursor:pointer;border-radius:8px;overflow:hidden;background:var(--card);" onclick="goTo('movie', { tmdbId: ${s.id}, type: '${s.media_type || type}' })">
-                      ${sPoster ? `<img src="${sPoster}" style="width:100%;aspect-ratio:2/3;object-fit:cover;" />` : '<div style="width:100%;aspect-ratio:2/3;background:var(--card2);display:flex;align-items:center;justify-content:center;color:var(--muted);">No poster</div>'}
-                      <div style="padding:8px;">
-                        <div style="font-size:13px;font-weight:600;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(sTitle)}">${escapeHtml(sTitle)}</div>
-                        <div class="small" style="color:var(--muted);">${sYear || '—'}</div>
-                      </div>
+                    <div class="movieSimilarCard" onclick="goTo('movie', { tmdbId: ${s.id}, type: '${s.media_type || type}' })">
+                      ${sPoster ? `<img src="${sPoster}" alt="${escapeHtml(sTitle)}" loading="lazy" />` : '<div class="movieSimilarFallback">Нет постера</div>'}
+                      <div title="${escapeHtml(sTitle)}">${escapeHtml(sTitle)} <span class="small">${sYear || '—'}</span></div>
                     </div>
                   `;
                 }).join('')}
@@ -5004,6 +5274,27 @@ function loadProfile(){
           };
           
           goTo('evaluate');
+        });
+
+        document.getElementById('movieAddWishBtn')?.addEventListener('click', () => {
+          els.movieName.value = title;
+          els.director.value = director ? director.name : '';
+          els.year.value = year || '';
+          omdbMetaDraft = {
+            title,
+            tmdbId,
+            mediaType: type,
+            posterUrl: poster,
+            backdropUrl: backdrop,
+            imdbID: movie.external_ids?.imdb_id || `tmdb-${tmdbId}`,
+            type: type === 'tv' ? 'series' : 'movie',
+            genre: genres,
+            runtime: runtime ? `${runtime} min` : null,
+            imdbRating: rating,
+            actors: cast.map(a => a.name),
+            plot: overview,
+          };
+          addWishFromCurrentOmdb();
         });
         
       } catch (e) {
@@ -5083,6 +5374,8 @@ function loadProfile(){
         .sort((a,b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
         .slice(0,3);
 
+      renderHomeDashboard();
+
       if(rated.length === 0){
         els.recentWrap.innerHTML = `<div class="emptyNote">Пока нет оценённых — перейди в “Оценить” и добавь первый.</div>`;
         return;
@@ -5095,7 +5388,7 @@ function loadProfile(){
         const { final } = computeScores(m.scores);
         const card = document.createElement("div");
         card.className = "recentCard";
-        card.addEventListener("click", () => goTo("rated", { openId: m.id }));
+        card.addEventListener("click", () => goTo("rated"));
 
         card.appendChild(makePosterSmall(m.omdb?.posterUrl || null));
 
@@ -5119,6 +5412,112 @@ function loadProfile(){
 
       els.recentWrap.innerHTML = "";
       els.recentWrap.appendChild(grid);
+    }
+
+    function getMovieGenres(movie){
+      return String(movie?.omdb?.genre || "")
+        .split(",")
+        .map(x => normalize(x))
+        .filter(Boolean);
+    }
+
+    function getSmartRecommendation(){
+      const rated = movies.filter(m => (m.status || "watched") === "watched");
+      const candidates = movies.filter(m => (m.status || "watched") === "wish");
+      if(!candidates.length) return null;
+
+      const topRated = rated
+        .slice()
+        .sort((a,b) => computeScores(b.scores).final - computeScores(a.scores).final)
+        .slice(0, 8);
+      const genreWeights = {};
+      topRated.forEach(movie => getMovieGenres(movie).forEach(g => {
+        genreWeights[g] = (genreWeights[g] || 0) + 1;
+      }));
+
+      const favDirector = normalize(profile.favDirectorName || "");
+      const favActor = normalize(profile.favActorName || "");
+      let best = null;
+
+      candidates.forEach(movie => {
+        const genres = getMovieGenres(movie);
+        const actors = (Array.isArray(movie.omdb?.actors) ? movie.omdb.actors : []).map(normalize);
+        const director = normalize(movie.director || movie.omdb?.director || "");
+        let score = 0;
+        const reasons = [];
+
+        if(favDirector && director.includes(favDirector)){
+          score += 8; reasons.push("любимый режиссёр");
+        }
+        if(favActor && actors.some(actor => actor.includes(favActor))){
+          score += 8; reasons.push("любимый актёр");
+        }
+
+        const matchingGenres = genres.filter(g => genreWeights[g]);
+        score += matchingGenres.reduce((sum, g) => sum + genreWeights[g] * 2, 0);
+        if(matchingGenres.length) reasons.push("любимые жанры");
+
+        const similarTo = topRated.find(ratedMovie => {
+          const overlap = genres.filter(g => getMovieGenres(ratedMovie).includes(g));
+          return overlap.length >= 2;
+        });
+        if(similarTo){
+          score += 4;
+          reasons.push(`похож на «${similarTo.name}»`);
+        }
+
+        // Keep queue order as a stable tie-breaker.
+        score += Math.max(0, 1 - Number(movie.queueOrder || 1) / 100);
+        if(!best || score > best.score) best = { movie, score, reasons };
+      });
+
+      if(!best) return null;
+      return {
+        ...best,
+        reason: best.reasons.length ? best.reasons.slice(0, 2).join(" • ") : "из твоей очереди"
+      };
+    }
+
+    function renderHomeDashboard(){
+      const host = document.getElementById("homeDashboard");
+      if(!host) return;
+
+      const rated = movies
+        .filter(m => (m.status || "watched") === "watched")
+        .sort((a,b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+      const last = rated[0] || null;
+      const recommendation = getSmartRecommendation();
+      const nowTitle = String(nowState.title || "").trim();
+      const monthStart = new Date();
+      monthStart.setDate(1); monthStart.setHours(0,0,0,0);
+      const monthRated = rated.filter(m => Number(m.createdAt || 0) >= monthStart.getTime());
+      const monthScores = monthRated.map(m => computeScores(m.scores).final).filter(Number.isFinite);
+      const monthAvg = monthScores.length
+        ? formatFinalScore(monthScores.reduce((a,b) => a + b, 0) / monthScores.length)
+        : "—";
+
+      const card = (icon, label, value, meta, action = "", extra = "") => `
+        <div class="homeDashCard ${action ? "" : "static"}" ${action ? `data-dashboard-action="${action}"` : ""}>
+          <div class="homeDashIcon">${icon}</div>
+          <div class="homeDashLabel">${label}</div>
+          <div class="homeDashValue">${escapeHtml(value)}</div>
+          <div class="homeDashMeta">${escapeHtml(meta)}${extra}</div>
+        </div>`;
+
+      host.innerHTML = [
+        card("▶", "Смотрю сейчас", nowTitle || "Ничего не выбрано", nowTitle ? "Продолжить просмотр" : "Открыть раздел", nowTitle ? "now" : "now"),
+        card("◷", "Последний просмотренный", last?.name || "Пока пусто", last ? `Оценка: ${formatFinalScore(computeScores(last.scores).final)}` : "Добавь первый фильм", last ? "rated" : "evaluate"),
+        card("✦", "Рекомендация", recommendation?.movie.name || "Добавь фильм в очередь", recommendation?.reason || "Здесь появятся идеи", recommendation ? "wish" : "evaluate"),
+        card("▦", "Статистика за месяц", `${monthRated.length} фильм${monthRated.length === 1 ? "" : monthRated.length < 5 ? "а" : "ов"}`, `Средняя оценка: ${monthAvg}`)
+      ].join("");
+
+      host.querySelectorAll("[data-dashboard-action]").forEach(el => {
+        el.addEventListener("click", () => {
+          const action = el.dataset.dashboardAction;
+          if(action === "rated") goTo("rated");
+          else goTo(action);
+        });
+      });
     }
 
     // ========= Sliders =========
@@ -5749,7 +6148,13 @@ document.addEventListener("click", (e) => {
   lastFavPulseId = id;
 
   saveMovies();
-  renderEverything();
+
+  // Update only the existing favorite buttons; rebuilding the list causes a visible flash.
+  document.querySelectorAll(`.item[data-id="${CSS.escape(id)}"] .quickActions .iconBtn:not(.dangerMini)`).forEach(btn => {
+    btn.classList.toggle("favOn", !!m.favorite);
+    btn.textContent = m.favorite ? "⭐" : "☆";
+    btn.title = m.favorite ? "Убрать из избранного" : "В избранное";
+  });
 
   // UX feedback
   toast(m.favorite ? "Добавлено в избранное" : "Убрано из избранного", m.name || "Без названия");
@@ -5766,8 +6171,13 @@ document.addEventListener("click", (e) => {
       const min = Number(els.minAvg.value || "0");
       const tagQ = els.tagFilter.value.trim();
       const onlyFav = !!els.onlyFav.checked;
+      const yearQ = els.yearFilter.value.trim();
+      const genreQ = normalize(els.genreFilter.value);
+      const directorQ = normalize(els.directorFilter.value);
+      const actorQ = normalize(els.actorFilter.value);
+      const statusQ = els.statusFilter.value;
 
-      let arr = movies.filter(m => (m.status || "watched") === "watched");
+      let arr = movies.filter(m => (m.status || "watched") !== "wish");
 
       if(q) arr = arr.filter(m => movieMatchesQuery(m, q));
       if(min > 0) arr = arr.filter(m => computeScores(m.scores).final >= min);
@@ -5776,6 +6186,11 @@ document.addEventListener("click", (e) => {
         arr = arr.filter(m => (m.tags || []).map(t => normalize(t)).includes(nt));
       }
       if(onlyFav) arr = arr.filter(m => !!m.favorite);
+      if(yearQ) arr = arr.filter(m => String(m.year || "") === yearQ);
+      if(genreQ) arr = arr.filter(m => normalize(m.omdb?.genre || "").includes(genreQ));
+      if(directorQ) arr = arr.filter(m => normalize(m.director || m.omdb?.director || "").includes(directorQ));
+      if(actorQ) arr = arr.filter(m => (Array.isArray(m.omdb?.actors) ? m.omdb.actors : []).some(a => normalize(a).includes(actorQ)));
+      if(statusQ) arr = arr.filter(m => (m.status || "watched") === statusQ);
 
       const sort = els.sort.value;
       if(sort === "best"){
@@ -5831,6 +6246,28 @@ document.addEventListener("click", (e) => {
 
       const shownTxt = (shown === total) ? "" : ` • Показано: ${shown}`;
       els.stats.textContent = `Оценённых: ${total}${shownTxt} • Общий средний: ${formatFinalScore(overallAvg)} • Лучший: ${best ? (best.name + " (" + formatFinalScore(best.final) + ")") : "—"}`;
+    }
+
+    const LIST_VIEW_KEY = "netfly_list_view_v1";
+    function getListView(kind){
+      return localStorage.getItem(`${LIST_VIEW_KEY}_${kind}`) === "grid" ? "grid" : "list";
+    }
+    function setListView(kind, mode){
+      localStorage.setItem(`${LIST_VIEW_KEY}_${kind}`, mode === "grid" ? "grid" : "list");
+      document.querySelectorAll(`.viewModeBtn[data-list="${kind}"]`).forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.mode === getListView(kind));
+      });
+      if(kind === "rated") renderRated();
+      else renderWish();
+    }
+    function applyListView(kind, element){
+      if(!element) return;
+      element.classList.toggle("posterGrid", getListView(kind) === "grid");
+    }
+    function syncListViewButtons(){
+      document.querySelectorAll(".viewModeBtn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.mode === getListView(btn.dataset.list));
+      });
     }
 
     function makeThumb(url){
@@ -5909,6 +6346,7 @@ document.addEventListener("click", (e) => {
       els.pageInfo.textContent = `Страница ${ratedPage} из ${totalPages}`;
 
       els.items.innerHTML = "";
+      applyListView("rated", els.items);
       if(pageItems.length === 0){
         const empty = document.createElement("div");
         empty.className = "empty";
@@ -5997,6 +6435,9 @@ document.addEventListener("click", (e) => {
         const meta = document.createElement("div");
         meta.className = "metaLine";
         meta.innerHTML = `<span class="badgeRed">${formatFinalScore(final)}</span>`;
+        if(movie.omdb?.genre){
+          meta.innerHTML += `<span class="chip">${escapeHtml(movie.omdb.genre)}</span>`;
+        }
         if(tags.length){
           meta.innerHTML += `<span class="chip">Теги: <b>${highlightHtml(tags.join(", "), q)}</b></span>`;
         }
@@ -6363,6 +6804,7 @@ const actorsBlock = buildActorsBlock(movie, q);
       const statsEl = k === "series" ? els.wishSeriesStats : els.wishMoviesStats;
 
       listEl.innerHTML = "";
+      applyListView("wish", listEl);
 
       if(list.length === 0){
         listEl.innerHTML = `<div class="empty">Очередь пуста. Добавь что-нибудь из “Оценить”.</div>`;
@@ -6501,6 +6943,13 @@ summary.addEventListener("click", (e) => {
         statusPill.textContent = statusLabel;
         titleLine.appendChild(statusPill);
 
+        if(movie.year){
+          const yearTag = document.createElement("span");
+          yearTag.className = "tagPill";
+          yearTag.textContent = String(movie.year);
+          titleLine.appendChild(yearTag);
+        }
+
         const orderPill = document.createElement("span");
         orderPill.className = "chip orderPill";
         orderPill.textContent = "№" + (index + 1);
@@ -6518,6 +6967,14 @@ summary.addEventListener("click", (e) => {
 
 const meta = document.createElement("div");
 meta.className = "metaLine";
+
+const wishScore = computeScores(movie.scores).final;
+if(Number.isFinite(wishScore) && wishScore > 0){
+  meta.innerHTML = `<span class="badgeRed">Оценка: ${formatFinalScore(wishScore)}</span>`;
+}
+if(movie.omdb?.genre){
+  meta.innerHTML += `<span class="chip">${escapeHtml(movie.omdb.genre)}</span>`;
+}
 
 // Tags (clickable)
 if(tags.length){
@@ -7512,11 +7969,17 @@ function renderWishSeries(){ renderWishKind("series"); }
     });
 
     // rerender controls (rated)
-    [els.search, els.sort, els.minAvg, els.tagFilter].forEach(el => {
+    [els.search, els.sort, els.minAvg, els.tagFilter, els.yearFilter, els.genreFilter, els.directorFilter, els.actorFilter, els.statusFilter].forEach(el => {
       if(el.tagName === "SELECT") el.addEventListener("change", () => { ratedPage = 1; renderRated(); });
       else el.addEventListener("input", () => { ratedPage = 1; renderRated(); });
     });
     els.onlyFav.addEventListener("change", () => { ratedPage = 1; renderRated(); });
+    els.filtersToggle?.addEventListener("click", () => {
+      const isOpen = els.filtersToggle.getAttribute("aria-expanded") === "true";
+      els.filtersToggle.setAttribute("aria-expanded", String(!isOpen));
+      els.filtersToggle.textContent = isOpen ? "＋ Фильтры" : "− Скрыть фильтры";
+      document.querySelectorAll(".filterExtra").forEach(block => block.classList.toggle("hidden", isOpen));
+    });
 
     
     // now controls
@@ -7941,6 +8404,10 @@ if(finishToRated){
   function init(){
   const initialRoute = routeFromLocation();
   currentView = initialRoute.viewId;
+  document.querySelectorAll(".viewModeBtn").forEach(btn => {
+    btn.addEventListener("click", () => setListView(btn.dataset.list, btn.dataset.mode));
+  });
+  syncListViewButtons();
   renderNav();
   renderSliders();
   updateTotals();
@@ -7949,6 +8416,14 @@ if(finishToRated){
   // Cinema night init
   const on = loadCinemaNight();
   applyCinemaNight(on);
+
+  const themeSelect = document.getElementById("themeSelect");
+  applyTheme(loadTheme());
+  themeSelect?.addEventListener("change", () => {
+    saveTheme(themeSelect.value);
+    applyTheme(themeSelect.value);
+    toast("Тема изменена", themeSelect.options[themeSelect.selectedIndex].text);
+  });
 
   const cn = document.getElementById("cinemaNightToggle");
   if(cn){

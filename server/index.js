@@ -414,6 +414,38 @@ app.get("/api/tmdb/genres", requireAuth, async (req, res) => {
   }
 });
 
+// Pick a random TMDB title using search/discover filters.
+app.get("/api/tmdb/random", requireAuth, async (req, res) => {
+  const { type = "movie", genre, year, sort = "popularity.desc", director, actor } = req.query;
+  try {
+    const endpoint = type === "tv" ? "discover/tv" : "discover/movie";
+    const params = new URLSearchParams({ api_key: TMDB_KEY, language: "ru-RU", sort_by: sort, page: String(Math.floor(Math.random() * 3) + 1), "vote_count.gte": "50" });
+    if(genre) params.append("with_genres", genre);
+    if(year) params.append(type === "tv" ? "first_air_date_year" : "primary_release_year", year);
+
+    const people = [director, actor].filter(Boolean);
+    if(people.length){
+      const ids = [];
+      for(const person of people){
+        const search = await fetch(`${TMDB_BASE}/search/person?api_key=${TMDB_KEY}&language=ru-RU&query=${encodeURIComponent(person)}`);
+        const data = await search.json();
+        if(data.results?.[0]?.id) ids.push(data.results[0].id);
+      }
+      if(ids.length) params.append("with_people", ids.join(","));
+    }
+
+    const response = await fetch(`${TMDB_BASE}/${endpoint}?${params}`);
+    const data = await response.json();
+    if(!response.ok) throw new Error(data.status_message || "TMDB random error");
+    const items = data.results || [];
+    if(!items.length) return res.status(404).json({ error: "По этим фильтрам ничего не найдено" });
+    res.json(items[Math.floor(Math.random() * items.length)]);
+  } catch(e){
+    logger.error("TMDB random error", { error: e.message, stack: e.stack });
+    res.status(500).json({ error: "TMDB random error" });
+  }
+});
+
 // TMDB image proxy (to avoid CORS/403 issues)
 app.get("/api/tmdb/image/*", requireAuth, async (req, res) => {
   const imagePath = req.params[0];
