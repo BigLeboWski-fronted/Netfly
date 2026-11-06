@@ -934,7 +934,8 @@ details[open] .itemBody{
   }
   /* Row 2: nav bar below topbar */
   .mobileNav{
-    display: flex !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .wrap{ margin: 10px auto 20px; }
   .card{ padding: 12px; }
@@ -2570,21 +2571,21 @@ body.theme-bw{ --bg:#000; --bg2:#111; --text:#f5f5f5; --muted:#aaa; --accent:#ff
 /* Mobile nav bar (below topbar, mobile only) */
 .mobileNav{
   display: none;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+  overflow: hidden;
   background: rgba(0,0,0,.78);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(255,255,255,.06);
   padding: 0 10px 2px;
-  gap: 0;
+  gap: 2px;
 }
-.mobileNav::-webkit-scrollbar { display: none; }
 .mobileNav .navBtn{
-  flex-shrink: 0;
-  white-space: nowrap;
+  min-width: 0;
+  width: 100%;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.15;
   font-size: 12px;
-  padding: 10px 10px;
+  padding: 9px 3px;
 }
 /* Animate disclosure height using its actual content size. */
 html{ scrollbar-gutter:stable; }
