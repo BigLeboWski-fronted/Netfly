@@ -746,9 +746,13 @@ app.get("*", (req, res) => {
 // ── Start ─────────────────────────────────────────────────────────────────────
 
 const PORT = process.env.PORT || 3000;
+if (require.main === module) {
 migrate()
   .then(() => app.listen(PORT, () => logger.info(`Netfly server started on port ${PORT}`)))
   .catch((e) => { 
     logger.error("Migration failed", { error: e.message, stack: e.stack });
     process.exit(1); 
   });
+}
+
+module.exports = app;

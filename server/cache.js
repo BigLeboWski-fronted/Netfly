@@ -88,6 +88,6 @@ class Cache {
 const cache = new Cache();
 
 // Периодическая очистка просроченных записей (каждые 5 минут)
-setInterval(() => cache.cleanup(), 5 * 60 * 1000);
+setInterval(() => cache.cleanup(), 5 * 60 * 1000).unref();
 
 module.exports = cache;

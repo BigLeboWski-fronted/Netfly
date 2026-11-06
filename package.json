@@ -3,11 +3,15 @@
   "version": "1.0.0",
   "main": "server/index.js",
   "scripts": {
+    "build": "node scripts/build.js",
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
-    "local": "node local-server.js"
+    "local": "node local-server.js",
+    "db:migrate": "node server/migrate.js"
   },
   "dependencies": {
+    "@neon/config": "^1.11.3",
+    "@neon/env": "^1.6.15",
     "bcryptjs": "2.4.3",
     "cookie-parser": "1.4.7",
     "dotenv": "16.4.7",
@@ -16,6 +20,7 @@
     "morgan": "^1.10.1",
     "pg": "8.13.3",
     "resend": "4.1.2",
+    "serverless-http": "^4.0.0",
     "winston": "^3.19.0"
   }
 }
