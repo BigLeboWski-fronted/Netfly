@@ -1591,7 +1591,12 @@ body::before{
 .movieSimilarCard img,.movieSimilarFallback{ width:100%; aspect-ratio:2/3; object-fit:cover; border-radius:12px; background:rgba(255,255,255,.08); display:block; }
 .movieSimilarCard div{ margin-top:7px; font-size:12px; font-weight:800; line-height:1.2; }
 @media(max-width:900px){ .movieSimilarGrid{ grid-template-columns:repeat(3,minmax(0,1fr)); } }
-@media(max-width:520px){ .movieHeroPoster{ width:180px; margin:0 auto; } .movieHeroInfo{ min-width:0; } .movieHeroContent{ padding:26px 14px !important; } .movieSimilarGrid{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:700px){
+  .movieHeroContent{ flex-direction:column; align-items:stretch; }
+  .movieHeroPoster{ width:min(220px,70%); margin:0 auto; }
+  .movieHeroInfo{ flex:auto; min-width:0; width:100%; align-self:stretch; overflow-wrap:anywhere; }
+}
+@media(max-width:520px){ .movieHeroContent{ padding:26px 14px !important; } .movieSimilarGrid{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
 
 /* Buttons feel */
 button{
