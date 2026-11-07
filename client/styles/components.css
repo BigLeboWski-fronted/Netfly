@@ -1,0 +1,39 @@
+/* Preserve the existing card design while using keyboard-accessible buttons. */
+.homeDashButton, .recentMovieButton {
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+  white-space: normal;
+  font-family: inherit;
+  color: var(--text);
+}
+#brandRoot { display: contents; }
+.catalogGrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:12px; }
+.catalogCard { position:relative; border-radius:8px; overflow:hidden; }
+.catalogLink { display:flex; flex-direction:column; gap:5px; padding:8px; color:inherit; text-decoration:none; overflow-wrap:anywhere; }
+.catalogLink::after { content:""; position:absolute; inset:0; }
+.catalogLink:focus-visible::after { outline:2px solid var(--accent); outline-offset:-3px; border-radius:8px; }
+.catalogLink strong { font-size:13px; }
+.catalogCard .searchPosterFallback button { z-index:2; white-space:normal; }
+.catalogFilters { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:8px; margin:12px 0; }
+.catalogFilters > * { min-width:0; }
+.catalogActions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:16px 0; }
+.catalogActions button { white-space:normal; }
+#tmdbSearchInput { width:100%; padding:12px; border:1px solid var(--border); border-radius:14px; background:var(--card); color:var(--text); font:inherit; }
+.resourceStatus { padding:24px; text-align:center; }
+.reactMovieHero { max-width:1200px; margin:0 auto; padding:40px 20px; display:flex; gap:30px; flex-wrap:wrap; }
+.movieHeroPoster { overflow:hidden; --search-card-bg:var(--bg2); }
+.movieHeroInfo a { color:inherit; }
+.movieOverview, .personBiography { line-height:1.7; }
+.reactCastGrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:16px; }
+.trailerFrame { aspect-ratio:16/9; border-radius:8px; overflow:hidden; background:#000; }
+.trailerFrame iframe { display:block; width:100%; height:100%; border:0; }
+.reactPersonHero { display:flex; flex-wrap:wrap; align-items:flex-start; gap:24px; }
+.personPortrait { width:180px; border-radius:16px; overflow:hidden; --search-card-bg:var(--bg2); }
+.personBio { flex:1; min-width:220px; }
+.personBiography { white-space:pre-line; }
+@media(max-width:680px) {
+  .personBio { min-width:0; flex-basis:100%; }
+  .catalogFilters { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .catalogFilters input, .catalogFilters select, #tmdbSearchInput { font-size:16px; }
+}

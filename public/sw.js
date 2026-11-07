@@ -1,5 +1,5 @@
-const CACHE = "netfly-v3";
-const STATIC = ["/", "/index.html", "/icon.svg", "/manifest.json"];
+const CACHE = "netfly-v4-react";
+const STATIC = ["/", "/index.html", "/icon.svg", "/manifest.json", "/assets/ui.js", "/assets/ui.css"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(STATIC)));

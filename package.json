@@ -4,6 +4,11 @@
   "main": "server/index.js",
   "scripts": {
     "build": "node scripts/build.js",
+    "test:react": "npm run build && node scripts/test-react.js",
+    "prestart": "npm run build",
+    "predev": "npm run build",
+    "prelocal": "npm run build",
+    "client:watch": "node scripts/watch-client.js",
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
     "local": "node local-server.js",
@@ -19,8 +24,14 @@
     "jsonwebtoken": "9.0.2",
     "morgan": "^1.10.1",
     "pg": "8.13.3",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "resend": "4.1.2",
     "serverless-http": "^4.0.0",
     "winston": "^3.19.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "jsdom": "^31.0.0"
   }
 }
