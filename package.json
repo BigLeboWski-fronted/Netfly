@@ -20,6 +20,7 @@
     "bcryptjs": "2.4.3",
     "cookie-parser": "1.4.7",
     "dotenv": "16.4.7",
+    "esbuild": "^0.28.2",
     "express": "4.21.2",
     "jsonwebtoken": "9.0.2",
     "morgan": "^1.10.1",
@@ -31,7 +32,6 @@
     "winston": "^3.19.0"
   },
   "devDependencies": {
-    "esbuild": "^0.28.2",
     "jsdom": "^31.0.0"
   }
 }
