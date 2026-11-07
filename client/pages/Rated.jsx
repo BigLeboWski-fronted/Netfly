@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 const CRITERIA = [
   ['overall', 'Общее впечатление'],
@@ -40,6 +40,21 @@ function InfoGrid({ children }) { return <div className="infoGrid">{children}</d
 function Info({ label, children }) { return <div className="kv"><span>{label}</span><b>{children || '—'}</b></div>; }
 
 function RatedCard({ movie, query, open, grid, onToggle, onToggleFavorite, onDelete, onRate, onTagFilter, onOpenPerson, setRef }) {
+  const disclosure = useRef(null);
+  const animation = useRef(null);
+  useLayoutEffect(() => {
+    const node = disclosure.current;
+    const start = node.getBoundingClientRect().height;
+    animation.current?.cancel();
+    if (!open && !node.open) return;
+    node.open = true;
+    const end = open ? node.scrollHeight : node.querySelector('summary').getBoundingClientRect().height + 2;
+    if (typeof node.animate !== 'function' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) { node.open = open; return; }
+    const motion = node.animate([{ height: `${start}px` }, { height: `${end}px` }], { duration: 320, easing: 'cubic-bezier(.22,1,.36,1)' });
+    animation.current = motion;
+    motion.onfinish = () => { node.open = open; motion.cancel(); animation.current = null; };
+    return () => motion.cancel();
+  }, [open]);
   const tags = Array.isArray(movie.tags) ? movie.tags : [];
   const actors = Array.isArray(movie.omdb?.actors) ? movie.omdb.actors.slice(0, 3) : [];
   const poster = movie.omdb?.posterUrl || null;
@@ -52,12 +67,8 @@ function RatedCard({ movie, query, open, grid, onToggle, onToggleFavorite, onDel
   useEffect(() => { setRef(movie.id, ref.current); return () => setRef(movie.id, null); }, [movie.id, setRef]);
 
   return <div className={'itemShell' + (grid && open ? ' gridOpen' : '')} data-id={movie.id} ref={ref}>
-    <details className="item" open={open} onToggle={event => {
-      // Ignore the native toggle emitted when React applies the controlled
-      // `open` prop after a move from the queue.
-      if (event.currentTarget.open !== open) onToggle();
-    }}>
-      <summary>
+    <details className="item animatedRated" ref={disclosure}>
+      <summary onClick={event => { event.preventDefault(); onToggle(); }}>
         <div className="sumLeft">
           <Poster src={poster} title={movie.name} />
           <div className="sumText">
@@ -194,7 +205,7 @@ export function RatedPage({ movies = [], pageSize = 20, filters: initialFilters,
   const [state, setState] = useState({
     filters: { ...defaultFilters, ...(initialFilters || {}) },
     page: initialPage,
-    viewMode: initialViewMode === 'grid' ? 'grid' : 'list',
+    viewMode: 'list',
     filtersOpen: false,
   });
   const [favoriteRevision, setFavoriteRevision] = useState(0);
@@ -231,10 +242,6 @@ export function RatedPage({ movies = [], pageSize = 20, filters: initialFilters,
     <div className="listHeader">
       <div className="listTop">
         <h2>Оценённые</h2>
-        <div className="viewToggle" aria-label="Вид списка">
-          <button type="button" className={state.viewMode === 'grid' ? 'active' : ''} onClick={() => changeView('grid')}>▦ Сетка</button>
-          <button type="button" className={state.viewMode === 'list' ? 'active' : ''} onClick={() => changeView('list')}>☷ Список</button>
-        </div>
         <button className="danger" type="button" onClick={onClearAll}>Очистить оценённые</button>
       </div>
       <div className="controls">

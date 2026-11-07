@@ -78,6 +78,24 @@ async function test() {
     assert.match(doc.querySelector('#recentWrap').textContent, /Пока нет/);
     assert.deepEqual(errors, []);
 
+    // The React home widget persists episode marks through the existing state.
+    run(`nowState.imdbID = 'tt-series-test'; nowState.title = 'Тестовый сериал';
+      nowState.watched = {}; omdbEpCache['tt-series-test'] = {
+        totalEpisodes: 2, seasons: { '1': [
+          { Episode: '1', Title: 'Первая' }, { Episode: '2', Title: 'Вторая' }
+        ] }
+      }; renderNowHomeWidget();`);
+    await settle();
+    assert.match(doc.querySelector('#nowWidgetHome').textContent, /Тестовый сериал/);
+    doc.querySelector('#nowWidgetHome .primary').click();
+    await settle();
+    assert.equal(run("nowState.watched.S1E1"), true);
+    assert.equal(JSON.parse(window.localStorage.getItem('netfly_now_v1')).watched.S1E1, true);
+    assert.match(doc.querySelector('#nowWidgetHome .nowSub').textContent, /1\/2/);
+    run("nowState.imdbID = null; renderNowHomeWidget();");
+    await settle();
+    assert.equal(doc.querySelector('#nowWidgetHome').textContent, '');
+
     // Card actions must remain outside summary and usable when closed.
     run(`movies = [
       { id: 'rated-test', name: 'Rated', status: 'watched', scores: {} },
@@ -95,6 +113,7 @@ async function test() {
     assert.equal(ratedCard.open, false);
     assert.equal(ratedShell.querySelector('.favoriteToggle').classList.contains('favOn'), true);
     ratedCard.querySelector('summary').click();
+    await settle();
     assert.equal(ratedCard.open, true);
     run("goTo('wish');");
     await settle();
@@ -113,6 +132,19 @@ async function test() {
     await settle();
     assert.equal(window.location.pathname, '/evaluate');
     assert.equal(doc.querySelector('#addBtn').textContent, 'Сохранить оценку');
+    const editedId = run('editingMovieId');
+    const nameInput = doc.getElementById('evaluate-name');
+    Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(nameInput, 'Оценка через React');
+    nameInput.dispatchEvent(new window.Event('input', { bubbles: true }));
+    const scoreInput = doc.getElementById('score-overall');
+    Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(scoreInput, '8');
+    scoreInput.dispatchEvent(new window.Event('input', { bubbles: true }));
+    doc.querySelector('.evaluateReact').dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+    await settle();
+    const persistedEdit = JSON.parse(window.localStorage.getItem('netfly_movies_v6'));
+    assert.equal(persistedEdit.filter(movie => movie.id === editedId).length, 1);
+    assert.equal(persistedEdit.find(movie => movie.id === editedId).name, 'Оценка через React');
+    assert.equal(persistedEdit.find(movie => movie.id === editedId).scores.overall, 8);
     run("goTo('wish');");
     await settle();
     run("deleteMovie('wish-test', { softEl: document.querySelector('#wishMoviesList details') });");

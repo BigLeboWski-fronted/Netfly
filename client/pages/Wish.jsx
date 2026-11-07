@@ -28,7 +28,7 @@ function Poster({ src, title, large = false }) {
 
 function Info({ label, value }) { return <div className="kv"><span>{label}</span><b>{value || '—'}</b></div>; }
 
-function WishCard({ movie, index, query, open, grid, onToggle, onToggleFavorite, onMove, onDelete, onOpenPerson, onReason, onDragStart, onDrop, onTagFilter, setRef }) {
+function WishCard({ movie, index, query, open, grid, dragging, onToggle, onToggleFavorite, onMove, onDelete, onOpenPerson, onReason, onDragStart, onDragEnd, onDrop, onTagFilter, setRef }) {
   const [reason, setReason] = useState(movie.wishReason || '');
   const ref = useRef(null);
   const tags = Array.isArray(movie.tags) ? movie.tags : [];
@@ -40,7 +40,7 @@ function WishCard({ movie, index, query, open, grid, onToggle, onToggleFavorite,
   const kinoUrl = `https://kino.pub/item/search?type=${kind === 'Сериал' ? 'serial' : 'movie'}&mode=&query=${encodeURIComponent(movie.name || '')}`;
   useEffect(() => { setRef(movie.id, ref.current); return () => setRef(movie.id, null); }, [movie.id, setRef]);
 
-  return <div className={'itemShell' + (grid && open ? ' gridOpen' : '')} data-id={movie.id} ref={ref} onDragOver={event => event.preventDefault()} onDrop={() => onDrop(movie.id)}>
+  return <div className={'itemShell' + (grid && open ? ' gridOpen' : '') + (dragging ? ' dragging' : '')} data-id={movie.id} ref={ref} onDragOver={event => { event.preventDefault(); if (!dragging) event.currentTarget.classList.add('dropTarget'); }} onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget)) event.currentTarget.classList.remove('dropTarget'); }} onDrop={event => { event.preventDefault(); event.currentTarget.classList.remove('dropTarget'); onDrop(movie.id); }}>
     <details className="item" open={open} onToggle={event => {
       // React controls the open state. Ignore the browser's toggle event when
       // it was caused by React applying `open`, otherwise random/openId can
@@ -96,12 +96,22 @@ function WishCard({ movie, index, query, open, grid, onToggle, onToggleFavorite,
       <button type="button" className="iconBtn" title="Переместить в оценённые" onClick={() => onMove(movie.id)}>✓</button>
       <button type="button" className="iconBtn kinoBtn" title="Искать на kino.pub" onClick={() => window.open(kinoUrl, '_blank', 'noopener,noreferrer')}>KP</button>
       <button type="button" className="iconBtn dangerMini" title="Удалить" onClick={() => onDelete(movie.id, ref.current)}>🗑</button>
-    </div><button type="button" className="dragHandle" draggable="true" title="Перетащить" onDragStart={event => onDragStart(event, movie.id)}>≡</button></div>
+      <button type="button" className="dragHandle" draggable="true" title="Перетащить" onDragStart={event => {
+        event.stopPropagation();
+        if (ref.current) {
+          const bounds = ref.current.getBoundingClientRect();
+          event.dataTransfer.setDragImage(ref.current, event.clientX - bounds.left, event.clientY - bounds.top);
+        }
+        event.dataTransfer.setData('text/plain', movie.id);
+        event.dataTransfer.effectAllowed = 'move';
+        onDragStart(event, movie.id);
+      }} onDragEnd={onDragEnd}>≡</button>
+    </div></div>
   </div>;
 }
 
 export function WishPage({ movies = [], initialKind = 'movie', initialViewMode = 'list', initialQuery = '', onStateChange, onToggleFavorite, onMove, onDelete, onOpenPerson, onReason, onReorder, onClear, onRandom, openId }) {
-  const [state, setState] = useState({ kind: initialKind === 'series' ? 'series' : 'movie', viewMode: initialViewMode === 'grid' ? 'grid' : 'list', query: initialQuery || '' });
+  const [state, setState] = useState({ kind: initialKind === 'series' ? 'series' : 'movie', viewMode: 'list', query: initialQuery || '' });
   const [openCard, setOpenCard] = useState(null);
   const [dragId, setDragId] = useState(null);
   const [favoriteRevision, setFavoriteRevision] = useState(0);
@@ -127,15 +137,17 @@ export function WishPage({ movies = [], initialKind = 'movie', initialViewMode =
     const targetIndex = ids.indexOf(targetId);
     ids.splice(targetIndex < 0 ? ids.length : targetIndex, 0, dragId);
     onReorder?.(state.kind, ids);
+    const moved = refs.current.get(dragId);
+    moved?.classList.add('justMoved');
+    setTimeout(() => moved?.classList.remove('justMoved'), 850);
     setDragId(null);
   }
   return <section className="card wishReactPage">
     <div className="listHeader"><div className="listTop">
       <h2>Буду смотреть</h2>
-      <div className="viewToggle" aria-label="Вид списка"><button type="button" className={state.viewMode === 'grid' ? 'active' : ''} onClick={() => { localStorage.setItem('netfly_list_view_v1_wish', 'grid'); commit(current => ({ ...current, viewMode: 'grid' })); }}>▦ Сетка</button><button type="button" className={state.viewMode === 'list' ? 'active' : ''} onClick={() => { localStorage.setItem('netfly_list_view_v1_wish', 'list'); commit(current => ({ ...current, viewMode: 'list' })); }}>☷ Список</button></div>
       <div className="segmented wishSegment"><button type="button" className={'segBtn ' + (state.kind === 'movie' ? 'active' : '')} onClick={() => commit(current => ({ ...current, kind: 'movie' }))}>Фильмы</button><button type="button" className={'segBtn ' + (state.kind === 'series' ? 'active' : '')} onClick={() => commit(current => ({ ...current, kind: 'series' }))}>Сериалы</button></div>
       <button type="button" onClick={() => onRandom(state.kind, list)}>🎲 Случайный {state.kind === 'series' ? 'сериал' : 'фильм'}</button><button className="danger" type="button" onClick={() => onClear(state.kind)}>Очистить очередь</button>
     </div><div className="controls"><div><label htmlFor="wish-react-search">Поиск</label><input id="wish-react-search" type="search" value={state.query} placeholder="Начни вводить..." onChange={event => commit(current => ({ ...current, query: event.target.value }))} /></div></div><div className="small">В очереди: {list.length}</div></div>
-    <div id={state.kind === 'series' ? 'wishSeriesList' : 'wishMoviesList'} className={'items wishReactHost' + (state.viewMode === 'grid' ? ' posterGrid' : '')}>{list.length ? list.map((movie, index) => <WishCard key={movie.id} movie={movie} index={index} query={state.query} grid={state.viewMode === 'grid'} open={openCard === movie.id} onToggle={() => setOpenCard(current => current === movie.id ? null : movie.id)} onToggleFavorite={id => { onToggleFavorite(id); setFavoriteRevision(value => value + 1); }} onMove={onMove} onDelete={onDelete} onOpenPerson={onOpenPerson} onReason={onReason} onTagFilter={tag => commit(current => ({ ...current, query: tag }))} onDragStart={(event, id) => { setDragId(id); event.dataTransfer.effectAllowed = 'move'; }} onDrop={reorder} setRef={setRef} />) : <div className="empty">Очередь пуста. Добавь что-нибудь из «Оценить».</div>}</div>
+    <div id={state.kind === 'series' ? 'wishSeriesList' : 'wishMoviesList'} className={'items wishReactHost' + (state.viewMode === 'grid' ? ' posterGrid' : '')}>{list.length ? list.map((movie, index) => <WishCard key={movie.id} movie={movie} index={index} query={state.query} grid={state.viewMode === 'grid'} dragging={dragId === movie.id} open={openCard === movie.id} onToggle={() => setOpenCard(current => current === movie.id ? null : movie.id)} onToggleFavorite={id => { onToggleFavorite(id); setFavoriteRevision(value => value + 1); }} onMove={onMove} onDelete={onDelete} onOpenPerson={onOpenPerson} onReason={onReason} onTagFilter={tag => commit(current => ({ ...current, query: tag }))} onDragStart={(event, id) => { setDragId(id); }} onDragEnd={() => setDragId(null)} onDrop={reorder} setRef={setRef} />) : <div className="empty">Очередь пуста. Добавь что-нибудь из «Оценить».</div>}</div>
   </section>;
 }

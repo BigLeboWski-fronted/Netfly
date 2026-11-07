@@ -2770,7 +2770,7 @@ html{ scrollbar-gutter:stable; }
   .movieSimilarGrid{ gap:8px; }
 }
 </style>
-  <link rel="stylesheet" href="/assets/ui.css" />
+  <link rel="stylesheet" href="/assets/ui.css?v=20261107-2" />
 </head>
 <body>
   <div class="topbar">
@@ -2820,7 +2820,8 @@ html{ scrollbar-gutter:stable; }
 
     <!-- EVALUATE (full width) -->
     <section id="view-evaluate" class="hidden view">
-      <section class="card">
+      <div id="evaluateReactRoot"></div>
+      <section class="card" hidden>
         <label for="movieName">Название фильма / сериала</label>
 
         <div class="dropdown">
@@ -3078,6 +3079,8 @@ html{ scrollbar-gutter:stable; }
             <h2>Смотрю сейчас</h2>
             <div class="small" id="nowStatsTop"></div>
           </div>
+          <div id="seriesControlsRoot"></div>
+          <div hidden>
           <div id="nowNextBanner" class="nextBanner hidden" role="button" tabindex="0"></div>
           <div id="nowFinishedPrompt" class="finishPrompt hidden">
             <div class="finishTitle">Похоже, сериал досмотрен 🎬</div>
@@ -3111,6 +3114,7 @@ html{ scrollbar-gutter:stable; }
           </div>
         </div>
 
+        </div>
         <section id="seriesCalendar" class="profileSection" aria-live="polite"></section>
         <div id="nowCard"></div>
       </section>
@@ -3133,66 +3137,12 @@ html{ scrollbar-gutter:stable; }
                   <path d="M12 13a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                 </svg>
               </div>
-              <label class="avatarUploadBtn">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                Загрузить
-                <input id="avatarFileInput" type="file" accept="image/*" style="display:none"/>
-              </label>
+              <div id="avatarEditorRoot"></div>
             </div>
           </div>
         </div>
 
-        <div class="settingsGroup">
-          <div class="settingsRow">
-            <div class="settingsRowLabel">
-              <strong>Тема оформления</strong>
-              <span>Выбери настроение интерфейса</span>
-            </div>
-            <select id="themeSelect" style="width:180px;">
-              <option value="netflix">Netflix</option>
-              <option value="cinema">Кинотеатр</option>
-              <option value="bw">Чёрно-белая</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="settingsGroup">
-          <div class="settingsRow">
-            <div class="settingsRowLabel">
-              <strong>Киноночь</strong>
-              <span>Тёплый приглушённый режим</span>
-            </div>
-            <label class="cnSwitch">
-              <input id="cinemaNightToggle" type="checkbox" />
-              <span class="cnSlider"></span>
-            </label>
-          </div>
-        </div>
-
-        <div class="settingsGroup">
-          <div class="settingsRow">
-            <div class="settingsRowLabel">
-              <strong>Имя пользователя</strong>
-              <span id="accUsernameHint">Можно менять раз в 3 дня</span>
-            </div>
-            <button class="primary" style="font-size:13px;padding:8px 14px;" onclick="openChangeUsername()">Изменить</button>
-          </div>
-          <div class="settingsRow">
-            <div class="settingsRowLabel">
-              <strong>Email</strong>
-              <span id="accEmailHint">Можно менять раз в 3 дня</span>
-            </div>
-            <button class="primary" style="font-size:13px;padding:8px 14px;" onclick="openChangeEmail()">Изменить</button>
-          </div>
-          <div class="settingsRow">
-            <div class="settingsRowLabel">
-              <strong>Пароль</strong>
-              <span id="accPasswordHint">Можно менять раз в 3 дня</span>
-            </div>
-            <button class="primary" style="font-size:13px;padding:8px 14px;" onclick="openChangePassword()">Изменить</button>
-          </div>
-        </div>
-
+        <div id="settingsReactRoot"></div>
       </div>
     </section>
 
@@ -3231,8 +3181,7 @@ html{ scrollbar-gutter:stable; }
             <details class="profileFold">
               <summary>Настроить профиль</summary>
               <div class="fieldRow">
-                <label class="small" for="profileTagline">Фраза профиля</label>
-                <input id="profileTagline" type="text" maxlength="80" placeholder="Например: Люблю медленные драмы и сильные финалы" />
+                <div id="profileTaglineRoot"></div>
                 <div class="small muted">Покажем её под заголовком профиля.</div>
               </div>
               <div style="margin-top:10px;">
@@ -3322,18 +3271,13 @@ html{ scrollbar-gutter:stable; }
 
       <!-- Step 1: login fields -->
       <div id="authStepLogin" class="authFields">
-        <div>
-          <label for="authEmail">Email или имя пользователя</label>
-          <input id="authEmail" type="text" placeholder="you@example.com" maxlength="80" autocomplete="username" />
-        </div>
-        <div>
-          <label for="authPassword">Пароль</label>
-          <input id="authPassword" type="password" placeholder="••••••" maxlength="72" autocomplete="current-password" />
-        </div>
+        <div id="loginReactRoot"></div>
       </div>
 
       <!-- Step 1: register fields -->
       <div id="authStepRegister" class="authFields" style="display:none">
+        <div id="registerReactRoot"></div>
+        <div hidden>
         <div>
           <label for="authRegEmail">Email</label>
           <input id="authRegEmail" type="email" placeholder="you@example.com" maxlength="80" autocomplete="email" />
@@ -3348,6 +3292,7 @@ html{ scrollbar-gutter:stable; }
         </div>
       </div>
 
+      </div>
       <!-- Step 2: code input (register only) -->
       <div id="authStepCode" class="authFields" style="display:none">
         <div style="text-align:center; color:var(--muted); font-size:13px; margin-bottom:4px">
@@ -3363,6 +3308,8 @@ html{ scrollbar-gutter:stable; }
 
       <!-- Step: forgot password — enter email -->
       <div id="authStepForgot" class="authFields" style="display:none">
+        <div id="recoveryReactRoot"></div>
+        <div hidden>
         <div style="text-align:center; color:var(--muted); font-size:13px; margin-bottom:4px">
           Введи email, и мы пришлём код для сброса пароля
         </div>
@@ -3372,6 +3319,7 @@ html{ scrollbar-gutter:stable; }
         </div>
       </div>
 
+      </div>
       <!-- Step: reset password — enter code + new password -->
       <div id="authStepReset" class="authFields" style="display:none">
         <div style="text-align:center; color:var(--muted); font-size:13px; margin-bottom:4px">
@@ -3414,7 +3362,8 @@ html{ scrollbar-gutter:stable; }
   </div>
 </div>
 
-  <script src="/assets/ui.js"></script>
+  <div id="accountReactRoot"></div>
+  <script src="/assets/ui.js?v=20261107-2"></script>
   <script>
     // ========= Config =========
     // External endpoints + local storage keys live here so they are easy to update.
@@ -3581,6 +3530,25 @@ html{ scrollbar-gutter:stable; }
     // When a queued item is moved to Rated it starts without scores. Keep the
     // form in edit mode so that the same editor can finish its rating.
     let editingMovieId = null;
+    let evaluateResults = [];
+    let evaluateRevision = 0;
+
+    function renderEvaluateReact(){
+      const fields = { name: els.movieName, director: els.director, year: els.year, status: els.status, tags: els.tags, notes: els.notes };
+      window.NetflyUI.evaluate({
+        initial: { ...Object.fromEntries(Object.entries(fields).map(([key,field]) => [key,field.value])), scores: { ...current }, editing: !!editingMovieId },
+        revision: ++evaluateRevision, results: evaluateResults, message: els.omdbStatus.textContent,
+        onChange: (key,value) => {
+          if(key === 'scores') Object.assign(current,value);
+          else fields[key].value = value;
+          if(key === 'name') scheduleOmdbAutocomplete();
+        },
+        onSearch: () => searchOmdb(els.movieName.value.trim()),
+        onSelect: async id => { hideResults(); await applyOmdbByImdbId(id); renderEvaluateReact(); },
+        onSave: addMovie,
+        onWish: addWishFromCurrentOmdb,
+      });
+    }
 
     // Rated pagination
     const PAGE_SIZE = 20;
@@ -3910,6 +3878,10 @@ function format1(n){ return (Math.round(Number(n) * 10) / 10).toFixed(1); }
 
     // ========= Storage =========
     function saveMovies(){
+      if(window.NetflyLibrary?.save){
+        window.NetflyLibrary.save(movies);
+        return;
+      }
       localStorage.setItem(STORAGE_KEY_V6, JSON.stringify(movies));
     }
     function safeRead(key){
@@ -3923,6 +3895,7 @@ function format1(n){ return (Math.round(Number(n) * 10) / 10).toFixed(1); }
       }
     }
     function loadMovies(){
+      if(window.NetflyLibrary?.load) return window.NetflyLibrary.load();
       const v = safeRead(STORAGE_KEY_V6);
       return v ? v : [];
     }
@@ -4250,6 +4223,7 @@ function loadProfile(){
       renderNav();
 
       if(viewId === "home") renderHome();
+      if(viewId === "evaluate") renderEvaluateReact();
       if(viewId === "search") renderSearch();
       if(viewId === "movie" && opts.tmdbId && opts.type) renderMoviePage(opts.tmdbId, opts.type);
       if(viewId === 'person') renderPersonPage(opts.personId);
@@ -4306,8 +4280,10 @@ function loadProfile(){
           onStateChange: nextState => {
             if(nextState.order){
               const order = new Map(nextState.order.map((id, index) => [id, index + 1]));
-              movies.forEach(movie => { if(order.has(movie.id)) movie.queueOrder = order.get(movie.id); });
-              saveMovies();
+              movies = window.NetflyLibrary?.replace?.(current => {
+                current.forEach(movie => { if(order.has(movie.id)) movie.queueOrder = order.get(movie.id); });
+                return current;
+              }) || movies;
               wishReactState = { ...wishReactState, ...nextState };
               return;
             }
@@ -4316,31 +4292,32 @@ function loadProfile(){
             localStorage.setItem("netfly_list_view_v1_wish", nextState.viewMode);
           },
           onReason: (id, value) => {
-            const movie = movies.find(item => item.id === id);
-            if(!movie) return;
-            movie.wishReason = value;
-            saveMovies();
+            updateLibraryMovie(id, movie => {
+              movie.wishReason = value;
+              return movie;
+            });
           },
           onReorder: (kind, ids) => {
             const order = new Map(ids.map((id, index) => [id, index + 1]));
-            movies.forEach(movie => {
-              if(order.has(movie.id) && (movie.status || "watched") === "wish" && getWishKindForMovie(movie) === kind){
-                movie.queueOrder = order.get(movie.id);
-              }
-            });
-            saveMovies();
+            movies = window.NetflyLibrary?.replace?.(current => {
+              current.forEach(movie => {
+                if(order.has(movie.id) && (movie.status || "watched") === "wish" && getWishKindForMovie(movie) === kind){
+                  movie.queueOrder = order.get(movie.id);
+                }
+              });
+              return current;
+            }) || movies;
             renderWish();
             toast("Порядок сохранён");
           },
           onMove: id => {
             const movie = movies.find(item => item.id === id);
             if(!movie) return;
-            movie.status = "watched";
-            movie.queueOrder = null;
-            // React list selectors are memoized by array identity. Give the
-            // Rated page a new collection so the moved item appears at once.
-            movies = movies.slice();
-            saveMovies();
+            updateLibraryMovie(id, current => {
+              current.status = "watched";
+              current.queueOrder = null;
+              return current;
+            });
             toast("Перемещено в оценённые", "Теперь можно поставить оценку");
             renderEverything();
             goTo("rated", { openId: movie.id });
@@ -4351,8 +4328,7 @@ function loadProfile(){
             if(!list.length) return;
             confirmQueueClear(kind).then(confirmed => {
               if(!confirmed) return;
-              movies = movies.filter(movie => !((movie.status || "watched") === "wish" && getWishKindForMovie(movie) === kind));
-              saveMovies();
+              movies = window.NetflyLibrary?.replace?.(current => current.filter(movie => !((movie.status || "watched") === "wish" && getWishKindForMovie(movie) === kind))) || movies;
               renderEverything();
             });
           },
@@ -4643,325 +4619,32 @@ function loadProfile(){
     }
 
     function renderFavMovieCard(mode){
-      const isSeries = mode === "series";
-      const id = isSeries ? profile.favSeriesId : profile.favMovieId;
-      const card = isSeries ? els.favSeriesCard : els.favMovieCard;
-
-      card.innerHTML = "";
-
-      const head = document.createElement("div");
-      head.className = "h";
-      head.innerHTML = `<div><p class="t">${isSeries ? "Любимый сериал" : "Любимый фильм"}</p><div class="s">Это витрина твоего вкуса</div></div>`;
-      card.appendChild(head);
-
+      const series = mode === "series", key = series ? "favSeriesId" : "favMovieId";
       const rated = getRated();
-      const movie = id ? rated.find(m => m.id === id) : null;
-
-      if(!movie){
-        const empty = document.createElement("div");
-        empty.className = "favEmpty";
-        empty.innerHTML = `<div>${isSeries ? "Любимый сериал не выбран" : "Любимый фильм не выбран"}</div>`;
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "primary";
-        btn.textContent = "Выбрать из оценённых";
-        btn.addEventListener("click", () => openPicker(isSeries ? "series" : "movie"));
-        empty.appendChild(btn);
-        card.appendChild(empty);
-        return;
-      }
-
-      const posterUrl = movie.omdb?.posterUrl || null;
-      const { final } = computeScores(movie.scores);
-
-      const row = document.createElement("div");
-      row.className = "favMovieRow";
-
-      const poster = document.createElement("div");
-      poster.className = "favPoster";
-      if(posterUrl){
-        const img = document.createElement("img");
-        img.src = posterUrl;
-        img.alt = "poster";
-        img.loading = "lazy";
-        poster.appendChild(img);
-      } else {
-        poster.textContent = "Нет постера";
-      }
-
-      const meta = document.createElement("div");
-      meta.className = "favMeta";
-
-      const name = document.createElement("p");
-      name.className = "favName";
-      name.textContent = movie.name || "Без названия";
-
-      const sub = document.createElement("div");
-      sub.className = "favSub";
-
-      // year + score + small "open in rated" icon
-      const scoreRow = document.createElement("div");
-      scoreRow.className = "favScoreRow";
-
-      if(movie.year){
-        const y = document.createElement("span");
-        y.textContent = String(movie.year);
-        scoreRow.appendChild(y);
-      }
-
-      const badge = document.createElement("span");
-      badge.className = "badgeRed";
-      badge.textContent = formatFinalScore(final);
-      scoreRow.appendChild(badge);
-
-      sub.appendChild(scoreRow);
-
-      const btns = document.createElement("div");
-      btns.className = "btns";
-      btns.style.justifyContent = "flex-start";
-
-      const changeBtn = document.createElement("button");
-      changeBtn.type = "button";
-      changeBtn.textContent = "Сменить";
-      changeBtn.addEventListener("click", () => openPicker(isSeries ? "series" : "movie"));
-
-      const removeBtn = document.createElement("button");
-      removeBtn.type = "button";
-      removeBtn.className = "dangerMini";
-      removeBtn.textContent = "Удалить";
-      removeBtn.addEventListener("click", () => {
-        if(isSeries) profile.favSeriesId = null;
-        else profile.favMovieId = null;
-        saveProfile();
-        syncToServer();
-        renderFavMovieCard(mode);
+      window.NetflyUI.profileFavorite(series ? "favSeriesCard" : "favMovieCard", {
+        title: series ? "Любимый сериал" : "Любимый фильм",
+        movie: rated.find(movie => movie.id === profile[key]),
+        candidates: rated.filter(movie => getTypeOfMovie(movie) === mode),
+        onChoose: id => { profile[key] = id; saveProfile(profile); renderProfile(); },
+        onClear: () => { profile[key] = null; saveProfile(profile); renderProfile(); },
+        onOpen: id => goTo("rated", { openId: id })
       });
-
-      btns.appendChild(changeBtn);
-      btns.appendChild(removeBtn);
-
-      // Fill empty space: genres + plot
-      const genres = movie.omdb?.genre || movie.tmdb?.genres?.map(g=>g.name).join(", ") || "";
-      const plot = movie.omdb?.plot || movie.tmdb?.overview || "";
-      if(genres || plot){
-        const extra = document.createElement("div");
-        extra.style.cssText = "margin-top:8px;display:flex;flex-direction:column;gap:6px;";
-        if(genres){
-          const g = document.createElement("div");
-          g.style.cssText = "font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.3px;text-transform:uppercase;";
-          g.textContent = genres;
-          extra.appendChild(g);
-        }
-        if(plot){
-          const p = document.createElement("div");
-          p.style.cssText = "font-size:12px;color:var(--muted);line-height:1.5;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;";
-          p.textContent = plot;
-          extra.appendChild(p);
-        }
-        meta.appendChild(extra);
-      }
-
-      meta.appendChild(name);
-      meta.appendChild(sub);
-      meta.appendChild(btns);
-
-      row.appendChild(poster);
-      row.appendChild(meta);
-
-      card.appendChild(row);
     }
-
-    function renderFavDirectorCard(){
-      const card = els.favDirectorCard;
-      card.innerHTML = "";
-
-      const head = document.createElement("div");
-      head.className = "h";
-      head.innerHTML = `<div><p class="t">Любимый режиссёр</p><div class="s">Выбран на основе твоих оценённых фильмов</div></div>`;
-      card.appendChild(head);
-
-      const name = String(profile.favDirectorName || "").trim();
+    function renderFavoritePerson(actor){
+      const key = actor ? "favActorName" : "favDirectorName", name = profile[key] || "";
       const rated = getRated();
-      const list = name ? rated.filter(m => matchDirector(m, name)) : [];
-      const st = computeGroupStats(list);
-
-      if(!name){
-        const empty = document.createElement("div");
-        empty.className = "favEmpty";
-        empty.innerHTML = `<div>Любимый режиссёр не выбран</div>`;
-
-        const field = document.createElement("div");
-        field.className = "filterRow";
-        field.innerHTML = `<label for="favDirectorInput">Выбрать из базы</label>
-          <input id="favDirectorInput" type="text" list="directorDatalist" placeholder="Начни вводить..." maxlength="80" />`;
-
-        const btnRow = document.createElement("div");
-        btnRow.className = "btns";
-        btnRow.style.justifyContent = "flex-start";
-
-        const setBtn = document.createElement("button");
-        setBtn.type = "button";
-        setBtn.className = "primary";
-        setBtn.textContent = "Выбрать";
-
-        setBtn.addEventListener("click", () => {
-          const v = document.getElementById("favDirectorInput").value.trim();
-          if(!v){ toast("Выбери режиссёра из твоей базы 🙂"); return; }
-          profile.favDirectorName = v;
-          saveProfile(profile);
-          closePicker();
-          renderProfile();
-        });
-
-        btnRow.appendChild(setBtn);
-        empty.appendChild(field);
-        empty.appendChild(btnRow);
-        card.appendChild(empty);
-        return;
-      }
-
-      const title = document.createElement("div");
-      title.className = "favName";
-      title.textContent = name;
-
-      const stats = document.createElement("div");
-      stats.className = "favStats";
-      stats.innerHTML = `<div class="favStat">Фильмов: <b>${st.count}</b></div><div class="favStat">Средняя: <b>${st.avg === null ? "—" : formatFinalScore(st.avg)}</b></div>`;
-
-      const btnRow = document.createElement("div");
-      btnRow.className = "btns";
-      btnRow.style.justifyContent = "flex-start";
-
-      const toggleBtn = document.createElement("button");
-      toggleBtn.type = "button";
-      toggleBtn.className = "primary";
-      toggleBtn.textContent = "Показать фильмы";
-
-      const clearBtn = document.createElement("button");
-      clearBtn.type = "button";
-      clearBtn.textContent = "Сбросить";
-      clearBtn.className = "danger";
-
-      const listWrap = document.createElement("div");
-      listWrap.className = "favList";
-      list.slice().sort((a,b)=> (b.createdAt??0)-(a.createdAt??0)).slice(0, 12).forEach(m => listWrap.appendChild(makeTinyItem(m)));
-
-      toggleBtn.addEventListener("click", () => {
-        const show = !listWrap.classList.contains("show");
-        listWrap.classList.toggle("show", show);
-        toggleBtn.textContent = show ? "Скрыть фильмы" : "Показать фильмы";
+      const names = [...new Set(rated.flatMap(movie => actor ? (movie.omdb?.actors || []) : splitPeople(movie.director)))].sort((a,b) => a.localeCompare(b,"ru"));
+      window.NetflyUI.profileFavorite(actor ? "favActorCard" : "favDirectorCard", {
+        title: actor ? "Любимый актёр" : "Любимый режиссёр", people: true, name,
+        candidates: names.map(name => ({ id: name, name })),
+        films: rated.filter(movie => actor ? matchActor(movie,name) : matchDirector(movie,name)),
+        onChoose: value => { profile[key] = value; saveProfile(profile); renderProfile(); },
+        onClear: () => { profile[key] = ""; saveProfile(profile); renderProfile(); },
+        onOpen: id => goTo("rated", { openId: id })
       });
-
-      clearBtn.addEventListener("click", () => {
-        profile.favDirectorName = "";
-        saveProfile(profile);
-        renderProfile();
-      });
-
-      btnRow.appendChild(toggleBtn);
-      btnRow.appendChild(clearBtn);
-
-      card.appendChild(title);
-      card.appendChild(stats);
-      card.appendChild(btnRow);
-      if(st.count) card.appendChild(listWrap);
     }
-
-    function renderFavActorCard(){
-      const card = els.favActorCard;
-      card.innerHTML = "";
-
-      const head = document.createElement("div");
-      head.className = "h";
-      head.innerHTML = `<div><p class="t">Любимый актёр</p><div class="s">Актёры берутся из OMDb → Actors</div></div>`;
-      card.appendChild(head);
-
-      const name = String(profile.favActorName || "").trim();
-      const rated = getRated();
-      const list = name ? rated.filter(m => matchActor(m, name)) : [];
-      const st = computeGroupStats(list);
-
-      if(!name){
-        const empty = document.createElement("div");
-        empty.className = "favEmpty";
-        empty.innerHTML = `<div>Любимый актёр не выбран</div>`;
-
-        const field = document.createElement("div");
-        field.className = "filterRow";
-        field.innerHTML = `<label for="favActorInput">Выбрать из базы</label>
-          <input id="favActorInput" type="text" list="actorDatalist" placeholder="Начни вводить..." maxlength="80" />`;
-
-        const btnRow = document.createElement("div");
-        btnRow.className = "btns";
-        btnRow.style.justifyContent = "flex-start";
-
-        const setBtn = document.createElement("button");
-        setBtn.type = "button";
-        setBtn.className = "primary";
-        setBtn.textContent = "Выбрать";
-
-        setBtn.addEventListener("click", () => {
-          const v = document.getElementById("favActorInput").value.trim();
-          if(!v){ toast("Выбери актёра из твоей базы 🙂"); return; }
-          profile.favActorName = v;
-          saveProfile(profile);
-          closePicker();
-          renderProfile();
-        });
-
-        btnRow.appendChild(setBtn);
-        empty.appendChild(field);
-        empty.appendChild(btnRow);
-        card.appendChild(empty);
-        return;
-      }
-
-      const title = document.createElement("div");
-      title.className = "favName";
-      title.textContent = name;
-
-      const stats = document.createElement("div");
-      stats.className = "favStats";
-      stats.innerHTML = `<div class="favStat">Фильмов: <b>${st.count}</b></div><div class="favStat">Средняя: <b>${st.avg === null ? "—" : formatFinalScore(st.avg)}</b></div>`;
-
-      const btnRow = document.createElement("div");
-      btnRow.className = "btns";
-      btnRow.style.justifyContent = "flex-start";
-
-      const toggleBtn = document.createElement("button");
-      toggleBtn.type = "button";
-      toggleBtn.className = "primary";
-      toggleBtn.textContent = "Показать фильмы";
-
-      const clearBtn = document.createElement("button");
-      clearBtn.type = "button";
-      clearBtn.textContent = "Сбросить";
-      clearBtn.className = "danger";
-
-      const listWrap = document.createElement("div");
-      listWrap.className = "favList";
-      list.slice().sort((a,b)=> (b.createdAt??0)-(a.createdAt??0)).slice(0, 12).forEach(m => listWrap.appendChild(makeTinyItem(m)));
-
-      toggleBtn.addEventListener("click", () => {
-        const show = !listWrap.classList.contains("show");
-        listWrap.classList.toggle("show", show);
-        toggleBtn.textContent = show ? "Скрыть фильмы" : "Показать фильмы";
-      });
-
-      clearBtn.addEventListener("click", () => {
-        profile.favActorName = "";
-        saveProfile(profile);
-        renderProfile();
-      });
-
-      btnRow.appendChild(toggleBtn);
-      btnRow.appendChild(clearBtn);
-
-      card.appendChild(title);
-      card.appendChild(stats);
-      card.appendChild(btnRow);
-      if(st.count) card.appendChild(listWrap);
-    }
+    function renderFavDirectorCard(){ renderFavoritePerson(false); }
+    function renderFavActorCard(){ renderFavoritePerson(true); }
 
     function applyAvatar(src){
       const avatarSvg = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M20 21a8 8 0 0 0-16 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M12 13a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
@@ -4989,6 +4672,12 @@ function loadProfile(){
     function renderProfile(){
       ensureProfileDatalists();
       applyAvatar(profile.avatar || null);
+      window.NetflyUI.profileTagline({ value: profile.tagline, onChange: value => {
+        profile.tagline = value;
+        saveProfile(profile);
+        els.profileSubtitle.textContent = value.trim() || "Твоя личная библиотека фильмов и сериалов";
+        renderProfile();
+      } });
 
       // Personalization: tagline
       if(els.profileTagline){
@@ -5007,68 +4696,19 @@ function loadProfile(){
 
       const avg = rated.length ? (rated.map(m => computeScores(m.scores).final).reduce((a,b)=>a+b,0) / rated.length) : null;
 
-      els.profileTiles.innerHTML = "";
       const tiles = [
         { k: "Оценено", n: rated.length },
         { k: "Буду смотреть", n: wishCount },
         { k: "Избранное", n: favCount },
         { k: "Средняя оценка", n: avg === null ? "—" : formatFinalScore(avg) },
       ];
-      tiles.forEach(t => {
-        const d = document.createElement("div");
-        d.className = "tile";
-        d.innerHTML = `<div class="n">${escapeHtml(t.n)}</div><div class="k">${escapeHtml(t.k)}</div>`;
-        els.profileTiles.appendChild(d);
-      });
-
-
-      // Watching week stats (Now Watching)
-      if(els.profileWatchingWeek){
-        const week = sumMinutesLast7Days();
-        const streak = computeStreak();
-        const { watched, total, pct } = computeNowProgress();
-
-        els.profileWatchingWeek.innerHTML = "";
-        const head = document.createElement("div");
-        head.className = "secHead";
-        head.innerHTML = `<h3>Просмотр за неделю</h3><div class="small">По “Смотрю сейчас”</div>`;
-        els.profileWatchingWeek.appendChild(head);
-
-        const row = document.createElement("div");
-        row.className = "favStats";
-        row.innerHTML = `
-          <div class="favStat">За 7 дней: <b>${week.eps} серий</b></div>
-          <div class="favStat">Время: <b>${formatMinutes(week.minutes)}</b></div>
-          <div class="favStat">Стрик: <b>${nowState.streakOn ? (streak + " дн.") : "выкл."}</b></div>
-          <div class="favStat">Текущий прогресс: <b>${total ? `${watched}/${total} (${pct ?? 0}%)` : watched}</b></div>
-        `;
-        els.profileWatchingWeek.appendChild(row);
-
-        if(nowState.goalEps > 0){
-          const pctGoal = Math.min(100, Math.round((week.eps / nowState.goalEps)*100));
-          const bar = document.createElement("div");
-          bar.className = "progressBar";
-          const fill = document.createElement("div");
-          fill.style.width = String(pctGoal) + "%";
-          bar.appendChild(fill);
-
-          const note = document.createElement("div");
-          note.className = "small";
-          note.style.marginTop = "8px";
-          note.style.color = "var(--muted)";
-          note.textContent = `Цель недели: ${week.eps}/${nowState.goalEps} (${pctGoal}%)`;
-
-          els.profileWatchingWeek.appendChild(bar);
-          els.profileWatchingWeek.appendChild(note);
-        }else{
-          const note = document.createElement("div");
-          note.className = "small";
-          note.style.marginTop = "8px";
-          note.style.color = "var(--muted)";
-          note.textContent = "Можешь поставить цель недели во вкладке “Смотрю сейчас”.";
-          els.profileWatchingWeek.appendChild(note);
-        }
-      }
+      window.NetflyUI.profileTiles({ tiles });
+      const week = sumMinutesLast7Days();
+      const progress = computeNowProgress();
+      window.NetflyUI.profileWeek({ week, time: formatMinutes(week.minutes),
+        streak: nowState.streakOn ? computeStreak() + " дн." : "выкл.",
+        progress: progress.total ? progress.watched + "/" + progress.total + " (" + (progress.pct || 0) + "%)" : progress.watched,
+        goal: nowState.goalEps });
 
       // Scores analytics (simple taste insights)
       if(els.profileScores){
@@ -5095,108 +4735,21 @@ function loadProfile(){
         }
         const topLabel = topKey === "emotions" ? "эмоции" : (topKey === "engage" ? "вовлечённость" : "общее впечатление");
 
-        els.profileScores.innerHTML = "";
-        const head = document.createElement("div");
-        head.className = "secHead";
-        head.innerHTML = `<h3>Твоя аналитика оценок</h3><div class="small">Средние по шкалам</div>`;
-        els.profileScores.appendChild(head);
-
-        const wrap = document.createElement("div");
-        wrap.className = "favStats";
-        crit.forEach(c => {
-          const box = document.createElement("div");
-          box.className = "favStat";
-          box.innerHTML = `${escapeHtml(c.label)}: <b>${avgs[c.key] === null ? "—" : formatFinalScore(avgs[c.key])}</b>`;
-          wrap.appendChild(box);
-        });
-        els.profileScores.appendChild(wrap);
-
-        const insight = document.createElement("div");
-        insight.className = "small";
-        insight.style.marginTop = "8px";
-        insight.style.color = "var(--muted)";
-        insight.textContent = rated.length ? (`Инсайт: ты чаще всего высоко оцениваешь ${topLabel}.`) : "Добавь оценки, чтобы увидеть инсайты.";
-        els.profileScores.appendChild(insight);
+        window.NetflyUI.profileScores({ criteria: crit, averages: avgs,
+          insight: rated.length ? "Инсайт: ты чаще всего высоко оцениваешь " + topLabel + "." : "Добавь оценки, чтобы увидеть инсайты." });
       }
 
-      if(document.getElementById("profileDeepStats")){
-        const host = document.getElementById("profileDeepStats");
-        const byYear = {};
-        const actorCounts = {};
-        const genreCounts = {};
-        const countryCounts = {};
-        let totalMinutes = 0;
-        rated.forEach(m => {
-          const year = m.year || "Без года";
-          const score = computeScores(m.scores).final;
-          byYear[year] ||= { sum:0, count:0 };
-          byYear[year].sum += score; byYear[year].count += 1;
-          const omdb = m.omdb || {};
-          const runtime = parseInt(String(omdb.runtime || "").match(/\d+/)?.[0] || "0", 10);
-          totalMinutes += runtime;
-          String(omdb.country || "").split(",").map(x => x.trim()).filter(Boolean).forEach(x => countryCounts[x] = (countryCounts[x] || 0) + 1);
-          String(omdb.genre || "").split(",").map(x => x.trim()).filter(Boolean).forEach(x => genreCounts[x] = (genreCounts[x] || 0) + 1);
-          (Array.isArray(omdb.actors) ? omdb.actors : []).forEach(x => actorCounts[x] = (actorCounts[x] || 0) + 1);
-        });
-        const topEntries = obj => Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0,5);
-        const yearText = Object.entries(byYear).sort((a,b)=>String(a[0]).localeCompare(String(b[0]))).map(([y,v]) => `${y}: ${formatFinalScore(v.sum/v.count)}`).join(" · ") || "—";
-        const chips = entries => entries.length ? entries.map(([name,count]) => `<span class="chip">${escapeHtml(name)} <b>×${count}</b></span>`).join("") : "<span class='small'>—</span>";
-        host.innerHTML = `
-          <div class="secHead"><h3>Расширенная статистика</h3><div class="small">По твоей библиотеке</div></div>
-          <div class="favStats">
-            <div class="favStat">Просмотрено: <b>${rated.length}</b></div>
-            <div class="favStat">Время просмотра: <b>${formatMinutes(totalMinutes)}</b></div>
-          </div>
-          <div class="textBlock"><div class="k">Любимые жанры</div><div class="tagsInline">${chips(topEntries(genreCounts))}</div></div>
-          <div class="textBlock"><div class="k">Любимые актёры</div><div class="tagsInline">${chips(topEntries(actorCounts))}</div></div>
-          <div class="textBlock"><div class="k">Фильмы по странам</div><div class="tagsInline">${chips(topEntries(countryCounts))}</div></div>
-          <div class="textBlock"><div class="k">Средняя оценка по годам</div><div class="v">${escapeHtml(yearText)}</div></div>`;
-      }
-
-      // Genres
-      const top = getTopGenres(5);
-      els.profileGenreChips.innerHTML = "";
-      if(!top.length){
-        const sm = document.createElement("div");
-        sm.className = "small";
-        sm.style.color = "var(--muted)";
-        sm.textContent = "Пока нет жанров — добавь фильм через OMDb, чтобы подтянулись жанры.";
-        els.profileGenreChips.appendChild(sm);
-      } else {
-        top.forEach(g => {
-          const c = document.createElement("div");
-          c.className = "genreChip";
-          c.textContent = g.name;
-          els.profileGenreChips.appendChild(c);
-        });
-      }
-
-      // Manual favorite genres (up to 2)
-      if(els.profileManualGenreChips){
-        const allGenres = Array.from(new Set(getRated().flatMap(m => (String(m.genre || m.genres || m.omdbGenre || "")
-          .split(",")
-          .map(s => s.trim())
-          .filter(Boolean))))).sort((a,b)=>a.localeCompare(b,"ru"));
-
-        els.profileManualGenreChips.innerHTML = "";
-        if(!allGenres.length){
-          const sm = document.createElement("div");
-          sm.className = "small";
-          sm.style.color = "var(--muted)";
-          sm.textContent = "Пока нет жанров — добавь фильм через OMDb, чтобы выбрать любимые жанры вручную.";
-          els.profileManualGenreChips.appendChild(sm);
-        } else {
-          const selected = new Set(Array.isArray(profile.manualGenres) ? profile.manualGenres : []);
-          allGenres.slice(0, 30).forEach(name => {
-            const c = document.createElement("div");
-            c.className = "genreChip isPick" + (selected.has(name) ? " on" : "");
-            c.textContent = name;
-            c.dataset.genre = name;
-            c.title = "Клик — выбрать/убрать";
-            els.profileManualGenreChips.appendChild(c);
-          });
+      window.NetflyUI.profileDeep({ movies: rated, formatMinutes });
+      const allGenres = Array.from(new Set(rated.flatMap(movie => String(movie.omdb?.genre || movie.genre || movie.genres || movie.omdbGenre || "").split(",").map(value => value.trim()).filter(Boolean)))).sort((a,b) => a.localeCompare(b,"ru"));
+      window.NetflyUI.profileGenres({ top: getTopGenres(5).map(genre => genre.name), all: allGenres.slice(0,30), selected: profile.manualGenres || [],
+        onToggle: name => {
+          const selected = [...(profile.manualGenres || [])];
+          const index = selected.indexOf(name);
+          if(index >= 0) selected.splice(index,1);
+          else { if(selected.length >= 2){ toast("Можно выбрать максимум 2 жанра"); return; } selected.push(name); }
+          profile.manualGenres = selected; saveProfile(profile); renderProfile();
         }
-      }
+      });
 
       // Favorite cards
       renderFavMovieCard("movie");
@@ -5204,40 +4757,12 @@ function loadProfile(){
       renderFavDirectorCard();
       renderFavActorCard();
 
-      // Best + recent
-      els.bestList.innerHTML = "";
-      els.recentRatedList.innerHTML = "";
-
-      const best = rated.slice().sort((a,b)=> computeScores(b.scores).final - computeScores(a.scores).final).slice(0,3);
-      const recent = rated.slice().sort((a,b)=> (b.createdAt??0)-(a.createdAt??0)).slice(0,3);
-
-      if(!best.length){
-        const e = document.createElement("div");
-        e.className = "small";
-        e.style.color = "var(--muted)";
-        e.textContent = "Пока пусто.";
-        els.bestList.appendChild(e);
-      } else {
-        best.forEach(m => {
-          const item = makeMiniItem(m);
-          item.addEventListener("click", () => goTo("rated", { openId: m.id }));
-          els.bestList.appendChild(item);
-        });
-      }
-
-      if(!recent.length){
-        const e = document.createElement("div");
-        e.className = "small";
-        e.style.color = "var(--muted)";
-        e.textContent = "Пока пусто.";
-        els.recentRatedList.appendChild(e);
-      } else {
-        recent.forEach(m => {
-          const item = makeMiniItem(m);
-          item.addEventListener("click", () => goTo("rated", { openId: m.id }));
-          els.recentRatedList.appendChild(item);
-        });
-      }
+      const scoreMovie = movie => ({ ...movie, formattedScore: formatFinalScore(computeScores(movie.scores).final) });
+      window.NetflyUI.profileLists({
+        best: rated.slice().sort((a,b) => computeScores(b.scores).final - computeScores(a.scores).final).slice(0,3).map(scoreMovie),
+        recent: rated.slice().sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0,3).map(scoreMovie),
+        onOpen: id => goTo("rated", { openId: id })
+      });
     }
 
     // React owns search and the movie/person containers.
@@ -5564,14 +5089,19 @@ row.appendChild(range);
       els.omdbStatus.innerHTML = text
         ? (isError ? `<b>Ошибка:</b> ${escapeHtml(text)}` : escapeHtml(text))
         : "";
+      if(currentView === 'evaluate') renderEvaluateReact();
     }
 
     function hideResults(){
+      evaluateResults = [];
+      if(currentView === 'evaluate') renderEvaluateReact();
       els.omdbResults.classList.remove("show");
       els.omdbResults.innerHTML = "";
     }
 
     function showResults(items){
+      evaluateResults = items;
+      if(currentView === 'evaluate') renderEvaluateReact();
       els.omdbResults.innerHTML = "";
 
       for(const it of items){
@@ -5826,6 +5356,7 @@ row.appendChild(range);
 
 document.addEventListener("click", (e) => {
       const withinEval =
+        document.getElementById('evaluateReactRoot').contains(e.target) ||
         els.omdbResults.contains(e.target) ||
         els.omdbSearchBtn.contains(e.target) ||
         els.movieName.contains(e.target);
@@ -5876,6 +5407,29 @@ document.addEventListener("click", (e) => {
       return max + 1;
     }
 
+    function updateLibraryMovie(id, update){
+      const updated = window.NetflyLibrary?.update?.(id, update);
+      if(updated){
+        movies = window.NetflyLibrary.load();
+        return movies.find(item => String(item.id) === String(id)) || updated;
+      }
+      const movie = movies.find(item => String(item.id) === String(id));
+      if(!movie) return null;
+      const patch = typeof update === "function" ? update(movie) : update;
+      if(patch && patch !== movie && typeof patch === "object") Object.assign(movie, patch);
+      saveMovies();
+      return movie;
+    }
+
+    function appendLibraryMovie(movie){
+      if(window.NetflyLibrary?.add){
+        movies = window.NetflyLibrary.add(movie);
+        return;
+      }
+      movies = [...movies, movie];
+      saveMovies();
+    }
+
     function startMovieRating(movie){
       if(!movie) return;
       editingMovieId = movie.id;
@@ -5914,17 +5468,18 @@ document.addEventListener("click", (e) => {
       if(editingMovieId){
         const existing = movies.find(item => item.id === editingMovieId);
         if(existing){
-          existing.name = name;
-          existing.director = director;
-          existing.year = year;
-          existing.status = status === "wish" ? "watched" : status;
-          existing.tags = tags;
-          existing.notes = notes;
-          existing.scores = { ...current };
-          existing.queueOrder = null;
-          if(omdbMetaDraft) existing.omdb = { ...omdbMetaDraft };
-          movies = movies.slice();
-          saveMovies();
+          updateLibraryMovie(existing.id, movie => {
+            movie.name = name;
+            movie.director = director;
+            movie.year = year;
+            movie.status = status === "wish" ? "watched" : status;
+            movie.tags = tags;
+            movie.notes = notes;
+            movie.scores = { ...current };
+            movie.queueOrder = null;
+            if(omdbMetaDraft) movie.omdb = { ...omdbMetaDraft };
+            return movie;
+          });
           toast("Оценка сохранена", name);
           editingMovieId = null;
           els.addBtn.textContent = "Добавить";
@@ -5963,8 +5518,7 @@ document.addEventListener("click", (e) => {
         omdb: omdbMetaDraft ? { ...omdbMetaDraft } : null,
       };
 
-      movies = [...movies, movie];
-      saveMovies();
+      appendLibraryMovie(movie);
 
       // UX feedback
       toast(status === "wish" ? "Добавлено в 'Буду смотреть'" : "Добавлено в оценённые", name);
@@ -5994,10 +5548,11 @@ document.addEventListener("click", (e) => {
 
       const existing = movies.find(m => m.omdb?.imdbID && m.omdb.imdbID === omdbMetaDraft.imdbID);
       if(existing){
-        existing.status = "wish";
-        if(!existing.queueOrder) existing.queueOrder = getNextWishOrder(getWishKindForMovie(existing));
-        movies = movies.slice();
-        saveMovies();
+        updateLibraryMovie(existing.id, movie => {
+          movie.status = "wish";
+          if(!movie.queueOrder) movie.queueOrder = getNextWishOrder(getWishKindForMovie(movie));
+          return movie;
+        });
         // UX feedback
         toast("Перемещено в 'Буду смотреть'", existing.name || "Без названия");
         renderEverything();
@@ -6028,8 +5583,7 @@ document.addEventListener("click", (e) => {
         omdb: { ...omdbMetaDraft },
       };
 
-      movies = [...movies, movie];
-      saveMovies();
+      appendLibraryMovie(movie);
       // UX feedback
       toast("Добавлено в 'Буду смотреть'", movie.name || "Без названия");
       renderEverything();
@@ -6058,8 +5612,11 @@ document.addEventListener("click", (e) => {
       const wishKind = wasWish ? getWishKindForMovie(m) : null;
 
       // Update data first
-      movies = movies.filter(x => x.id !== id);
-      saveMovies();
+      if(window.NetflyLibrary?.remove) movies = window.NetflyLibrary.remove(id);
+      else {
+        movies = movies.filter(x => x.id !== id);
+        saveMovies();
+      }
 
       // Preferred: remove only the deleted element from DOM (no full rerender -> no flicker)
       if(softEl){
@@ -6220,14 +5777,18 @@ document.addEventListener("click", (e) => {
     }
 
     function toggleFavorite(id){
-  const m = movies.find(x => x.id === id);
+  let m = movies.find(x => x.id === id);
   if(!m) return;
-  m.favorite = !m.favorite;
+  const updated = window.NetflyLibrary?.toggleFavorite?.(id);
+  if(updated){
+    movies = window.NetflyLibrary.load();
+    m = movies.find(x => String(x.id) === String(id)) || updated;
+  }else m.favorite = !m.favorite;
 
   // remember for quick pulse after rerender
   lastFavPulseId = id;
 
-  saveMovies();
+  if(!updated) saveMovies();
 
   // Update only the existing favorite buttons; rebuilding the list causes a visible flash.
   document.querySelectorAll(`.itemShell[data-id="${CSS.escape(id)}"] .favoriteToggle`).forEach(btn => {
@@ -6778,8 +6339,7 @@ const actorsBlock = buildActorsBlock(movie, q);
           onClearAll: () => {
             const rated = movies.filter(m => (m.status || "watched") !== "wish");
             if(!rated.length || !confirm("Очистить все оценённые? Это действие нельзя отменить.")) return;
-            movies = movies.filter(m => (m.status || "watched") === "wish");
-            saveMovies();
+            movies = window.NetflyLibrary?.replace?.(current => current.filter(m => (m.status || "watched") === "wish")) || movies;
             renderEverything();
           },
         });
@@ -6904,16 +6464,15 @@ const actorsBlock = buildActorsBlock(movie, q);
       const container = k === "series" ? els.wishSeriesList : els.wishMoviesList;
       const ids = Array.from(container.querySelectorAll("details.item")).map(el => el.dataset.id);
 
-      let order = 1;
-      ids.forEach(id => {
-        const m = movies.find(x => x.id === id);
-        if(!m) return;
-        if((m.status || "watched") !== "wish") return;
-        if(getWishKindForMovie(m) !== k) return;
-        m.queueOrder = order++;
-      });
-
-      saveMovies();
+      movies = window.NetflyLibrary?.replace?.(current => {
+        let order = 1;
+        ids.forEach(id => {
+          const m = current.find(x => x.id === id);
+          if(!m || (m.status || "watched") !== "wish" || getWishKindForMovie(m) !== k) return;
+          m.queueOrder = order++;
+        });
+        return current;
+      }) || movies;
     }
 
     function getDragAfterElement(container, y){
@@ -7194,9 +6753,11 @@ text.appendChild(meta);
           // UX: fade the card out first, then move
           details.classList.add("leaving");
           setTimeout(() => {
-            movie.status = "watched";
-            movie.queueOrder = null;
-            saveMovies();
+            updateLibraryMovie(movie.id, current => {
+              current.status = "watched";
+              current.queueOrder = null;
+              return current;
+            });
             renderEverything();
             toast("Перемещено в оценённые", movie.name || "Без названия");
             goTo("rated", { openId: movie.id });
@@ -7381,12 +6942,14 @@ text.appendChild(meta);
 
         const reasonInput = reasonBlock.querySelector(".reasonInput");
         reasonInput.addEventListener("input", () => {
-          movie.wishReason = reasonInput.value;
-          saveMovies();
+          const currentMovie = updateLibraryMovie(movie.id, current => {
+            current.wishReason = reasonInput.value;
+            return current;
+          }) || movie;
 
           // Update summary chip without rerender
           const existing = details.querySelector(".reasonChip");
-          const v = (movie.wishReason || "").trim();
+          const v = (currentMovie.wishReason || "").trim();
           if(v){
             if(existing) existing.textContent = "Почему: " + v;
             else {
@@ -7526,79 +7089,20 @@ body.appendChild(actionsRow);
 
     function renderNowHomeWidget(){
       if(!els.nowWidgetHome) return;
-
-      if(!nowState.imdbID){
-        els.nowWidgetHome.innerHTML = "";
-        return;
-      }
-
-      const { watched, total, pct } = computeNowProgress();
-      const next = getNextUnwatched();
-      const miniStatsHtml = buildNowMiniStatsHtml(watched, total);
-
-      const card = document.createElement("div");
-      card.className = "card";
-      card.style.marginTop = "12px";
-
-      const w = document.createElement("div");
-      w.className = "nowWidget";
-
-      const poster = document.createElement("div");
-      poster.className = "posterSm";
-      poster.style.width = "74px";
-      poster.style.height = "110px";
-      if(nowState.posterUrl){
-        const img = document.createElement("img");
-        img.src = nowState.posterUrl;
-        img.alt = "poster";
-        img.loading = "lazy";
-        poster.appendChild(img);
-      }else poster.textContent = "—";
-
-      const main = document.createElement("div");
-      main.className = "nowWidgetMain";
-
-      const head = document.createElement("div");
-      head.className = "nowWidgetHead";
-      head.innerHTML = `
-        <div style="min-width:0">
-          <p class="nowTitle">Смотрю сейчас: ${escapeHtml(nowState.title || "Сериал")}</p>
-          <div class="nowSub">${total ? `Прогресс: ${watched}/${total} (${pct ?? 0}%)` : `Отмечено серий: ${watched}`}</div>
-          ${miniStatsHtml}
-        </div>
-        <div class="btns" style="justify-content:flex-end">
-          <button type="button" id="nowOpenBtn">Открыть</button>
-          <button type="button" class="primary" id="nowNextBtn"${next ? "" : " disabled"}>Следующая серия</button>
-        </div>
-      `;
-      const bar = document.createElement("div");
-      bar.className = "progressBar";
-      const fill = document.createElement("div");
-      fill.style.width = (pct === null ? "0%" : String(pct) + "%");
-      bar.appendChild(fill);
-
-      main.appendChild(head);
-      main.appendChild(bar);
-
-      w.appendChild(poster);
-      w.appendChild(main);
-      card.appendChild(w);
-
-      els.nowWidgetHome.innerHTML = "";
-      els.nowWidgetHome.appendChild(card);
-
-      card.querySelector("#nowOpenBtn").addEventListener("click", () => goTo("now"));
-      card.querySelector("#nowNextBtn").addEventListener("click", () => {
-        const n = getNextUnwatched();
-        if(!n) return;
-        const key = `S${n.season}E${n.episode}`;
-        nowState.watched[key] = true;
-        markActivityToday();
-        recordWatch(1);
-        saveNowState();
-        renderNowHomeWidget();
-        toast("Отмечено", `S${n.season}E${n.episode} • ${n.title || "серия"}`);
+      window.NetflyUI.seriesHome({
+        state: { ...nowState }, progress: computeNowProgress(),
+        next: getNextUnwatched(), weeks: computeWeeksWatching(),
+        onOpen: () => goTo("now"),
+        onNext: () => {
+          const next = getNextUnwatched();
+          if(!next) return;
+          nowState.watched[`S${next.season}E${next.episode}`] = true;
+          markActivityToday(); recordWatch(1); saveNowState();
+          renderNowHomeWidget();
+          toast("Отмечено", `S${next.season}E${next.episode} • ${next.title || "серия"}`);
+        },
       });
+      return;
     }
     function updateNowAddDeleteUI(){
       if(els.nowAddControls) els.nowAddControls.classList.toggle("hidden", !!nowState.imdbID);
@@ -7609,9 +7113,10 @@ body.appendChild(actionsRow);
       // return source item back to queue (if it was hidden as active)
       try{
         if(nowState.sourceMovieId){
-          const src = movies.find(x => x.id === nowState.sourceMovieId);
-          if(src){ src.isNow = false; }
-          saveMovies();
+          updateLibraryMovie(nowState.sourceMovieId, src => {
+            src.isNow = false;
+            return src;
+          });
         }
       }catch{}
 
@@ -7636,8 +7141,8 @@ body.appendChild(actionsRow);
       const requestId = ++calendarRequest;
       const host = document.getElementById('seriesCalendar');
       if(!host) return;
-      if(!nowState.imdbID){ host.replaceChildren(); return; }
-      host.innerHTML = '<h3>Календарь серий</h3><p class="small">Загружаю даты…</p>';
+      if(!nowState.imdbID){ window.NetflyUI.calendar(null); return; }
+      window.NetflyUI.calendar({ loading: true });
       try{
         const source = movies.find(m => m.id === nowState.sourceMovieId);
         const params = new URLSearchParams({ imdb:nowState.imdbID });
@@ -7652,9 +7157,9 @@ body.appendChild(actionsRow);
           const date = new Date(ep.air_date + 'T12:00:00');
           description = `Сезон ${ep.season_number} · Серия ${ep.episode_number} · ${date.toLocaleDateString('ru-RU', { day:'numeric', month:'long', year:'numeric' })}`;
         }
-        host.innerHTML = `<div class="small" style="color:var(--muted);margin-bottom:6px">Ближайшая серия</div><div title="Дата оригинального выхода по TMDB. Выход озвучки может отличаться.">${escapeHtml(description)}</div>`;
+        window.NetflyUI.calendar({ description });
       }catch(e){
-        if(requestId === calendarRequest){ host.innerHTML = '<h3>Календарь серий</h3>'; const message = document.createElement('p'); message.textContent = e.message || 'Не удалось загрузить даты'; host.appendChild(message); }
+        if(requestId === calendarRequest) window.NetflyUI.calendar({ error: e.message || 'Не удалось загрузить даты' });
       }
     }
 
@@ -7715,136 +7220,39 @@ body.appendChild(actionsRow);
         fp.classList.toggle("hidden", !finished || dismissed);
       }
 
-if(!nowState.imdbID){
-        els.nowCard.innerHTML = `<div class="nowEmpty">Пока ничего не выбрано. Активируй сериал сверху — и здесь появятся сезоны/серии.</div>`;
+      if(window.NetflyUI.seriesProgress){
+        const entry = omdbEpCache[nowState.imdbID];
+        const next = getNextUnwatched();
+        window.NetflyUI.seriesControls({
+          active: !!nowState.imdbID, next,
+          finished: !!nowState.imdbID && !!entry?.totalEpisodes && !next && nowState.finishDismissedFor !== nowState.imdbID,
+          onReveal: () => { if(next) openNowEpisode(next.season, next.episode); },
+          queue: movies.filter(movie => (movie.status || "watched") === "wish" && getWishKindForMovie(movie) === "series"),
+          onPick: id => { const movie = movies.find(item => item.id === id); if(movie){ applyNowFromMovie(movie); goTo("now"); } },
+          onRemove: () => { clearActiveNowSeries(); toast("Убрано из «Смотрю сейчас»"); },
+          onRate: () => document.getElementById("finishToEvaluate").click(),
+          onDismiss: () => { nowState.finishDismissedFor = nowState.imdbID; saveNowState(); renderNow(); },
+        });
+        window.NetflyUI.seriesProgress({
+          state: { ...nowState }, progress: computeNowProgress(), next: getNextUnwatched(),
+          onSettings: patch => { Object.assign(nowState, patch); saveNowState(); renderNow(); },
+          onReset: () => {
+            nowState.watched = {}; nowState.watchLog = []; nowState.activityDays = [];
+            saveNowState(); renderNow(); renderNowHomeWidget();
+          },
+          onNext: () => {
+            const next = getNextUnwatched();
+            if(!next) return;
+            nowState.watched[`S${next.season}E${next.episode}`] = true;
+            markActivityToday(); recordWatch(1); saveNowState(); renderNow(); renderNowHomeWidget();
+          },
+        });
+        const seriesId = nowState.imdbID;
+        if(seriesId) ensureEpisodesForNow().then(() => { if(nowState.imdbID === seriesId) renderNowEpisodes(); });
         return;
       }
-
-      // ensure episodes (async) but render skeleton fast
-      els.nowCard.innerHTML = "";
-      const wrap = document.createElement("div");
-      wrap.className = "posterBig";
-
-      const posterBox = document.createElement("div");
-      posterBox.className = "posterBigImg";
-      posterBox.style.width = "110px";
-      posterBox.style.height = "165px";
-      if(nowState.posterUrl){
-        const img = document.createElement("img");
-        img.src = nowState.posterUrl;
-        img.alt = "poster";
-        img.loading = "lazy";
-        posterBox.appendChild(img);
-      }else posterBox.textContent = "Нет постера";
-
-      const meta = document.createElement("div");
-      meta.className = "posterMeta";
-
-      const { watched, total, pct } = computeNowProgress();
-      const next = getNextUnwatched();
-      const miniStatsHtml = buildNowMiniStatsHtml(watched, total);
-
-      const head = document.createElement("div");
-      head.className = "nowWidgetHead";
-      head.innerHTML = `
-        <div style="min-width:0">
-          <p class="nowTitle">${escapeHtml(nowState.title || "Сериал")}</p>
-          <div class="nowSub">${total ? `Прогресс: ${watched}/${total} (${pct ?? 0}%)` : `Отмечено серий: ${watched}`}</div>
-        </div>
-      `;
-
-      const bar = document.createElement("div");
-      bar.className = "progressBar";
-      const fill = document.createElement("div");
-      fill.style.width = (pct === null ? "0%" : String(pct) + "%");
-      bar.appendChild(fill);
-
-      const controls = document.createElement("div");
-      controls.className = "sessionRow";
-      controls.innerHTML = `
-        <div class="btns" style="justify-content:flex-start;">
-          <button type="button" class="primary" id="nowNextBtn"${next ? "" : " disabled"}>Следующая серия${next ? ` · S${next.season} E${next.episode}` : ''}</button>
-        </div>
-        <details class="nowPreferences" style="width:100%;margin-top:12px;">
-        <summary style="cursor:pointer;color:var(--muted);font-size:12px;">Настройки и статистика просмотра</summary>
-        <div style="margin:12px 0;">${miniStatsHtml}</div>
-        <div class="inline" style="gap:10px;">
-          <label class="small" style="margin:0;">Мин/серия</label>
-          <input id="nowRuntime" type="number" min="1" max="400" style="width:110px;" value="${escapeHtml(nowState.runtimeMin ?? "")}" placeholder="45" />
-          <label class="small" style="margin:0;">Стрик</label>
-          <input id="nowStreakOn" type="checkbox" ${nowState.streakOn ? "checked" : ""} />
-          <label class="small" style="margin:0;">Цель недели (серий)</label>
-          <input id="nowGoal" type="number" min="0" max="99" style="width:110px;" value="${escapeHtml(nowState.goalEps ?? 0)}" />
-        </div>
-        <button type="button" id="nowResetBtn" class="danger" style="margin-top:12px;">Сбросить прогресс</button>
-        </details>
-      `;
-
-      meta.appendChild(head);
-      meta.appendChild(bar);
-      meta.appendChild(controls);
-
-      wrap.appendChild(posterBox);
-      wrap.appendChild(meta);
-
-      els.nowCard.appendChild(wrap);
-
-      const episodesHost = document.createElement("div");
-      episodesHost.id = "nowEpisodes";
-      episodesHost.className = "episodeGrid";
-      episodesHost.innerHTML = `<div class="small" style="color:var(--muted);">Загружаю список серий…</div>`;
-      els.nowCard.appendChild(episodesHost);
-
-      // events
-      els.nowCard.querySelector("#nowRuntime").addEventListener("input", (e) => {
-        const v = Number(e.target.value || 0) || null;
-        nowState.runtimeMin = v ? clamp(v,1,400) : null;
-        saveNowState();
-      });
-      els.nowCard.querySelector("#nowStreakOn").addEventListener("change", (e) => {
-        nowState.streakOn = !!e.target.checked;
-        saveNowState();
-        renderNow();
-      });
-      els.nowCard.querySelector("#nowGoal").addEventListener("input", (e) => {
-        const v = Number(e.target.value || 0) || 0;
-        nowState.goalEps = clamp(v,0,99);
-        saveNowState();
-        renderNow();
-      });
-
-      els.nowCard.querySelector("#nowResetBtn").addEventListener("click", () => {
-        if(!confirm("Сбросить прогресс по сериалу? (галочки, цель и стрик)")) return;
-        nowState.watched = {};
-        nowState.watchLog = [];
-        nowState.activityDays = [];
-        saveNowState();
-        renderNow();
-        renderNowHomeWidget();
-        toast("Прогресс сброшен");
-      });
-
-      els.nowCard.querySelector("#nowNextBtn").addEventListener("click", () => {
-        const n = getNextUnwatched();
-        if(!n) return;
-        const key = `S${n.season}E${n.episode}`;
-        nowState.watched[key] = true;
-        markActivityToday();
-        recordWatch(1);
-        saveNowState();
-        renderNow();
-        renderNowHomeWidget();
-        toast("Отмечено", `S${n.season}E${n.episode} • ${n.title || "серия"}`);
-      });
-
-      // async fill episodes
-      (async () => {
-        await ensureEpisodesForNow();
-        renderNowEpisodes();
-      })();
     }
 
-    
     function openNowEpisode(season, episode){
       const s = Number(season)||0;
       const e = Number(episode)||0;
@@ -7856,7 +7264,7 @@ if(!nowState.imdbID){
 
       // open season block
       const block = host.querySelector(`.seasonBlock[data-season="${s}"]`);
-      if(block) block.classList.add("open");
+      window.dispatchEvent(new CustomEvent('netfly:reveal-episode', { detail: { season: s, episode: e } }));
 
       // focus episode row
       const key = `S${s}E${e}`;
@@ -7875,112 +7283,19 @@ if(!nowState.imdbID){
       const host = document.getElementById("nowEpisodes");
       if(!host) return;
 
-      host.innerHTML = "";
-      if(!nowState.imdbID){
-        host.innerHTML = "";
-        return;
-      }
-
-      const entry = omdbEpCache[nowState.imdbID];
-      const seasonsObj = entry?.seasons || {};
-      const seasons = Object.keys(seasonsObj).map(n=>Number(n)).filter(n=>n>0).sort((a,b)=>a-b);
-
-      if(!seasons.length){
-        host.innerHTML = `<div class="small" style="color:var(--muted);">Не удалось получить список серий из OMDb. Можно продолжать отмечать “Следующую серию” и вести прогресс, но без списка.</div>`;
-        return;
-      }
-
-      for(const s of seasons){
-        const eps = seasonsObj[String(s)] || [];
-        const block = document.createElement("div");
-        block.className = "seasonBlock";
-        block.dataset.season = String(s);
-        block.classList.toggle("open", false);
-
-        const seasonWatched = eps.filter(ep => nowState.watched[`S${s}E${ep.Episode}`]).length;
-        const seasonHead = document.createElement("div");
-        seasonHead.className = "seasonHead";
-        seasonHead.innerHTML = `<b>Сезон ${s}</b><span class="chip">${seasonWatched}/${eps.length || 0}</span>`;
-        seasonHead.addEventListener("click", () => block.classList.toggle("open"));
-        block.appendChild(seasonHead);
-
-        const body = document.createElement("div");
-        body.className = "seasonBody";
-
-        eps.forEach(ep => {
-          const key = `S${s}E${ep.Episode}`;
-          const row = document.createElement("div");
-          row.className = "epRow";
-          row.dataset.key = key;
-
-          const left = document.createElement("div");
-          left.className = "epLeft";
-
-          const cb = document.createElement("input");
-          cb.type = "checkbox";
-          cb.checked = !!nowState.watched[key];
-
-          const meta = document.createElement("div");
-          meta.className = "epMeta";
-
-          const t = document.createElement("p");
-          t.className = "epTitle";
-          t.textContent = `E${ep.Episode} • ${ep.Title || "Серия"}`;
-
-          const sub = document.createElement("div");
-          sub.className = "epSub";
-          const rel = ep.Released && ep.Released !== "N/A" ? ep.Released : "";
-          const ir = ep.imdbRating && ep.imdbRating !== "N/A" ? ("IMDb: " + ep.imdbRating) : "";
-          sub.textContent = [rel, ir].filter(Boolean).join(" • ") || "—";
-
-          meta.appendChild(t);
-          meta.appendChild(sub);
-
-          left.appendChild(cb);
-          left.appendChild(meta);
-
-          const badge = document.createElement("div");
-          badge.className = "epBadge";
-          badge.textContent = cb.checked ? "Просмотрено" : "—";
-
-          cb.addEventListener("change", () => {
-            nowState.watched[key] = !!cb.checked;
-            if(cb.checked){
-              markActivityToday();
-              recordWatch(1);
-            }
-            saveNowState();
-            badge.textContent = cb.checked ? "Просмотрено" : "—";
-            // update totals & UI
-            renderNowHomeWidget();
-            // update season head counts + top stats without full rerender
-            renderNow();
-          });
-
-          row.appendChild(left);
-          row.appendChild(badge);
-          body.appendChild(row);
-        });
-
-        block.appendChild(body);
-        host.appendChild(block);
-      }
-
-      // refresh next banner after episodes render
-      const nb = document.getElementById("nowNextBanner");
-      if(nb){
-        const nxt = getNextUnwatched();
-        if(nxt){
-          const code = `S${String(nxt.season).padStart(2,"0")}E${String(nxt.episode).padStart(2,"0")}`;
-          const title = nxt.title ? (" — " + nxt.title) : "";
-          nb.textContent = `Следующая: ${code}${title}`;
-          nb.classList.remove("hidden");
-        }else{
-          nb.textContent = "";
-          nb.classList.add("hidden");
-        }
-      }
-
+      window.NetflyUI.episodes({
+        seriesId: nowState.imdbID,
+        seasons: omdbEpCache[nowState.imdbID]?.seasons || {},
+        watched: { ...nowState.watched },
+        onToggle: (key, checked) => {
+          nowState.watched[key] = checked;
+          if(checked){ markActivityToday(); recordWatch(1); }
+          saveNowState();
+          renderNowHomeWidget();
+          renderNow();
+        },
+      });
+      return;
     }
 
     function formatMinutes(min){
@@ -8080,8 +7395,10 @@ if(!nowState.imdbID){
 
       // Smart queue: optional remove from wish if present? user said may move/mark active. We'll mark active with a flag on movie.
       try{
-        m.isNow = true;
-        saveMovies();
+        updateLibraryMovie(m.id, current => {
+          current.isNow = true;
+          return current;
+        });
       }catch{}
 
       renderNowHomeWidget();
@@ -8096,8 +7413,7 @@ function renderWishSeries(){ renderWishKind("series"); }
       const rated = movies.filter(m => (m.status || "watched") === "watched");
       if(rated.length === 0) return;
       if(confirm("Очистить все оценённые? Это действие нельзя отменить.")){
-        movies = movies.filter(m => (m.status || "watched") !== "watched");
-        saveMovies();
+            movies = window.NetflyLibrary?.replace?.(current => current.filter(m => (m.status || "watched") !== "watched")) || movies;
         renderEverything();
       }
     });
@@ -8106,8 +7422,7 @@ function renderWishSeries(){ renderWishKind("series"); }
       const wishMovies = movies.filter(m => (m.status || "watched") === "wish" && getWishKindForMovie(m) === "movie");
       if(wishMovies.length === 0) return;
       if(!confirm("Очистить очередь (фильмы)?")) return;
-      movies = movies.filter(m => !((m.status || "watched") === "wish" && getWishKindForMovie(m) === "movie"));
-      saveMovies();
+      movies = window.NetflyLibrary?.replace?.(current => current.filter(m => !((m.status || "watched") === "wish" && getWishKindForMovie(m) === "movie"))) || movies;
       renderEverything();
       if(currentView === "wish") renderWish();
     });
@@ -8116,8 +7431,7 @@ function renderWishSeries(){ renderWishKind("series"); }
       const wishSeries = movies.filter(m => (m.status || "watched") === "wish" && getWishKindForMovie(m) === "series");
       if(wishSeries.length === 0) return;
       if(!confirm("Очистить очередь (сериалы)?")) return;
-      movies = movies.filter(m => !((m.status || "watched") === "wish" && getWishKindForMovie(m) === "series"));
-      saveMovies();
+      movies = window.NetflyLibrary?.replace?.(current => current.filter(m => !((m.status || "watched") === "wish" && getWishKindForMovie(m) === "series"))) || movies;
       renderEverything();
       if(currentView === "wish") renderWish();
     });
@@ -8208,8 +7522,11 @@ if(finishToRated){
         // Move/ensure in rated list
         let existing = movies.find(x => x.omdb?.imdbID && x.omdb.imdbID === nowState.imdbID);
         if(existing){
-          existing.status = "watched";
-          existing.isNow = false;
+          existing = updateLibraryMovie(existing.id, current => {
+            current.status = "watched";
+            current.isNow = false;
+            return current;
+          }) || existing;
         }else{
           existing = {
             id: makeId(),
@@ -8225,9 +7542,8 @@ if(finishToRated){
             queueOrder: null,
             omdb: { imdbID: nowState.imdbID, posterUrl: nowState.posterUrl || null, runtime: nowState.runtimeMin ? (String(nowState.runtimeMin) + " min") : null, type:"series" }
           };
-          movies.push(existing);
+          appendLibraryMovie(existing);
         }
-        saveMovies();
 
         // clear now
         clearActiveNowSeries();
@@ -8349,12 +7665,16 @@ if(finishToRated){
       return data;
     }
 
+    let loadingServerLibrary = false;
     async function loadFromServer(){
       try{
         const data = await apiFetch("/api/data");
-        if(Array.isArray(data.movies) && data.movies.length){
-          movies = data.movies;
-          saveMovies();
+        if(localStorage.getItem("netfly_library_pending") === "1"){
+          scheduleSync();
+        }else if(Array.isArray(data.movies) && data.movies.length){
+          loadingServerLibrary = true;
+          movies = window.NetflyLibrary?.replace?.(data.movies) || data.movies;
+          loadingServerLibrary = false;
         }
         if(data.profile && Object.keys(data.profile).length){
           const local = loadProfile();
@@ -8379,6 +7699,7 @@ if(finishToRated){
 
     async function syncToServer(){
       if(!currentUser) return;
+      const librarySnapshot = JSON.stringify(movies);
       setSyncDot("syncing");
       try{
         await apiFetch("/api/data", {
@@ -8391,6 +7712,7 @@ if(finishToRated){
           }),
         });
         setSyncDot("ok");
+        if(JSON.stringify(movies) === librarySnapshot) localStorage.removeItem("netfly_library_pending");
       }catch(e){
         setSyncDot("err");
         console.warn("syncToServer:", e.message);
@@ -8403,6 +7725,15 @@ if(finishToRated){
       clearTimeout(syncTimer);
       syncTimer = setTimeout(syncToServer, 3000);
     }
+
+    // React library operations persist through the shared module directly.
+    // Bridge those writes into the existing debounced server sync as well.
+    window.addEventListener("netfly:library-change", () => {
+      movies = window.NetflyLibrary.load();
+      if(loadingServerLibrary) return;
+      localStorage.setItem("netfly_library_pending", "1");
+      scheduleSync();
+    });
 
     // Patch saveMovies/saveProfile/saveNowState to also trigger sync
     const _origSaveMovies = saveMovies;
@@ -8437,6 +7768,7 @@ if(finishToRated){
     function authSetLoading(on){ _authSubmit.disabled = on; }
 
     function showAuthStep(step){
+      _authSubmit.style.display = (step === 'login' || step === 'register' || step === 'forgot') ? 'none' : '';
       document.getElementById("authStepLogin").style.display    = step === "login"     ? "" : "none";
       document.getElementById("authStepRegister").style.display  = step === "register"  ? "" : "none";
       document.getElementById("authStepCode").style.display     = step === "code"      ? "" : "none";
@@ -8542,7 +7874,7 @@ if(finishToRated){
     });
 
     // Enter key
-    ["authEmail","authPassword","authRegEmail","authRegUsername","authRegPassword","authCode","authForgotEmail","authResetCode","authNewPassword"].forEach(id => {
+    ["authRegEmail","authRegUsername","authRegPassword","authCode","authForgotEmail","authResetCode","authNewPassword"].forEach(id => {
       const el = document.getElementById(id);
       if(el) el.addEventListener("keydown", (e) => { if(e.key === "Enter") _authSubmit.click(); });
     });
@@ -8607,90 +7939,33 @@ if(finishToRated){
   }
 
   // Settings button → navigate to settings view
+  window.NetflyUI.settings({ theme: loadTheme(), cinemaNight: loadCinemaNight(),
+    onTheme: theme => { saveTheme(theme); applyTheme(theme); toast('Тема изменена'); },
+    onNight: enabled => { saveCinemaNight(enabled); applyCinemaNight(enabled); toast(enabled ? 'Киноночь включена' : 'Киноночь выключена'); },
+    onAccount: kind => { if(kind === 'username') openChangeUsername(); else if(kind === 'email') openChangeEmail(); else openChangePassword(); }
+  });
   document.getElementById("settingsBtn")?.addEventListener("click", () => goTo("settings"));
 
   // Avatar
   applyAvatar(profile.avatar || null);
 
-  // Cropper state
-  let _cropSrc = null, _cropX = 0, _cropY = 0, _cropScale = 1;
-  let _dragStart = null;
-
-  const cropModal = document.getElementById("cropModal");
-  const cropImg   = document.getElementById("cropImg");
-  const cropWrap  = document.getElementById("cropWrap");
-  const cropZoom  = document.getElementById("cropZoom");
-
-  function openCropper(src){
-    _cropSrc = src; _cropX = 0; _cropY = 0; _cropScale = 1;
-    cropZoom.value = 1;
-    cropModal.classList.remove("hidden");
-    cropImg.onload = () => positionCropImg();
-    cropImg.src = src;
-    // if already cached, onload won't fire
-    if(cropImg.complete && cropImg.naturalWidth) positionCropImg();
-  }
-
-  function positionCropImg(){
-    const w = cropWrap.offsetWidth;
-    const nat = cropImg.naturalWidth / cropImg.naturalHeight;
-    const bw = w * _cropScale, bh = bw / nat;
-    cropImg.style.width  = bw + "px";
-    cropImg.style.height = bh + "px";
-    cropImg.style.left   = _cropX + "px";
-    cropImg.style.top    = _cropY + "px";
-  }
-
-  cropZoom.addEventListener("input", () => {
-    _cropScale = parseFloat(cropZoom.value);
-    positionCropImg();
-  });
-
-  // Drag to pan
-  cropWrap.addEventListener("pointerdown", e => {
-    _dragStart = { x: e.clientX - _cropX, y: e.clientY - _cropY };
-    cropWrap.setPointerCapture(e.pointerId);
-  });
-  cropWrap.addEventListener("pointermove", e => {
-    if(!_dragStart) return;
-    _cropX = e.clientX - _dragStart.x;
-    _cropY = e.clientY - _dragStart.y;
-    positionCropImg();
-  });
-  cropWrap.addEventListener("pointerup", () => { _dragStart = null; });
-
-  document.getElementById("cropCancel").addEventListener("click", () => {
-    cropModal.classList.add("hidden");
-  });
-
-  document.getElementById("cropApply").addEventListener("click", () => {
-    const size = cropWrap.offsetWidth;
-    const canvas = document.createElement("canvas");
-    canvas.width = canvas.height = 256;
-    const ctx = canvas.getContext("2d");
-    ctx.beginPath(); ctx.arc(128,128,128,0,Math.PI*2); ctx.clip();
-    const nat = cropImg.naturalWidth / cropImg.naturalHeight;
-    const bw = size * _cropScale, bh = bw / nat;
-    const scale = 256 / size;
-    ctx.drawImage(cropImg, _cropX * scale, _cropY * scale, bw * scale, bh * scale);
-    const result = canvas.toDataURL("image/jpeg", 0.88);
-    profile.avatar = result;
-    saveProfile(profile);
-    applyAvatar(result);
-    cropModal.classList.add("hidden");
-    toast("Аватар обновлён");
-  });
-
-  document.getElementById("avatarFileInput")?.addEventListener("change", function(){
-    const file = this.files[0];
-    if(!file) return;
-    const reader = new FileReader();
-    reader.onload = e => openCropper(e.target.result);
-    reader.readAsDataURL(file);
-    this.value = "";
-  });
+  window.NetflyUI.avatarEditor({ onSave: result => {
+    profile.avatar = result; saveProfile(profile); applyAvatar(result); toast("Аватар обновлён");
+  } });
 
   checkSession();
+  window.NetflyUI.login({ request: apiFetch, onSuccess: async data => {
+    showApp(data.username); await loadFromServer(); applyAvatar(profile.avatar || null); renderEverything();
+  } });
+  showAuthStep('login');
+  window.NetflyUI.registration({ request: apiFetch, onSuccess: async data => {
+    showApp(data.username); await loadFromServer(); applyAvatar(profile.avatar || null); renderEverything();
+  } });
+  window.NetflyUI.recovery({ request: apiFetch, onDone: () => {
+    authMode = 'login'; showAuthStep('login'); authSetError('');
+    document.getElementById('tabLogin').classList.add('active');
+    document.getElementById('tabRegister').classList.remove('active');
+  } });
 }
   // Register service worker
   if ("serviceWorker" in navigator) {
@@ -8715,6 +7990,11 @@ if(finishToRated){
   }
 
   function openChangeUsername() {
+    window.NetflyUI.accountUsername({ request: apiFetch,
+      onClose: () => window.NetflyUI.accountUsername(null),
+      onSuccess: username => { showApp(username); toast('Имя изменено', username); }
+    });
+    return;
     document.getElementById('accNewUsername').value = '';
     openAccModal('modalChangeUsername');
     document.getElementById('accNewUsername').focus();
@@ -8736,6 +8016,7 @@ if(finishToRated){
   }
 
   function openChangeEmail() {
+    openReactCredentials('email'); return;
     document.getElementById('accEmailStep1').style.display = 'flex';
     document.getElementById('accEmailStep2').style.display = 'none';
     document.getElementById('accEmailCode').value = '';
@@ -8775,6 +8056,7 @@ if(finishToRated){
   }
 
   function openChangePassword() {
+    openReactCredentials('password'); return;
     document.getElementById('accCurrentPassword').value = '';
     document.getElementById('accPasswordCode').value = '';
     document.getElementById('accNewPassword').value = '';
@@ -8782,6 +8064,13 @@ if(finishToRated){
     document.getElementById('accPwdCodeBlock').style.display = 'none';
     openAccModal('modalChangePassword');
     document.getElementById('accCurrentPassword').focus();
+  }
+
+  function openReactCredentials(mode){
+    window.NetflyUI.accountCredentials({ mode, request: apiFetch,
+      onClose: () => window.NetflyUI.accountCredentials(null),
+      onSuccess: () => toast(mode === 'email' ? 'Email изменён' : 'Пароль изменён')
+    });
   }
 
   async function switchToPasswordCode() {

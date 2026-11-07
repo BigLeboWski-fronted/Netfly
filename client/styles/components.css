@@ -8,6 +8,71 @@
   color: var(--text);
 }
 #brandRoot { display: contents; }
+.ratedReactHost .animatedRated .itemBody { opacity: 1; transform: none; max-height: none; transition: none; padding-bottom: 12px; }
+.ratedReactHost .animatedRated::details-content { block-size: auto; opacity: 1; transition: none; }
+.evaluateReact input:not([type=range]), .evaluateReact textarea, .evaluateReact select { box-sizing: border-box; width: 100%; border: 1px solid rgba(255,255,255,.16); border-radius: 12px; background: #202020; color: var(--text); padding: 11px 13px; font-family: inherit; font-size: 14px; color-scheme: dark; }
+.evaluateReact > label { display: block; margin-top: 12px; }
+.evaluateResults { display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow: auto; margin-top: 10px; }
+.evaluateResults .resItem { width: 100%; text-align: left; white-space: normal; font-family: inherit; color: var(--text); }
+#authScreen .authFields input,
+.accountReactDialog input { background-color: #202020 !important; color: #f2f2f2 !important; caret-color: #f2f2f2; }
+#authScreen .authFields input:-webkit-autofill,
+#authScreen .authFields input:-webkit-autofill:hover,
+#authScreen .authFields input:-webkit-autofill:focus,
+.accountReactDialog input:-webkit-autofill { -webkit-box-shadow: 0 0 0 1000px #202020 inset !important; -webkit-text-fill-color: #f2f2f2 !important; caret-color: #f2f2f2; }
+#authScreen .authFields input { box-sizing: border-box; width: 100%; min-height: 46px; padding: 12px 14px; border: 1px solid rgba(255,255,255,.16); border-radius: 12px; background: #202020; color: #fff; font-family: inherit; font-size: 14px; font-weight: 500; outline: none; color-scheme: dark; }
+#authScreen .authFields input:focus-visible { border-color: rgba(255,255,255,.55); box-shadow: 0 0 0 3px rgba(255,255,255,.08); }
+.authReactFields { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+#settingsReactRoot .settingsRow { gap: 20px; }
+#settingsReactRoot .settingsRowLabel { min-width: 0; flex: 1; }
+#settingsReactRoot .settingsRow select { box-sizing: border-box; flex: 0 0 155px; width: 155px; max-width: 100%; font-family: inherit; font-size: 13px; font-weight: 500; line-height: 1.4; padding: 10px 12px; }
+@media(max-width:480px) { #settingsReactRoot .settingsRow:has(select) { flex-wrap: wrap; } #settingsReactRoot .settingsRow select { flex-basis: 100%; width: 100%; } }
+.accountReactDialog label { display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+.accountReactDialog fieldset { border: 0; padding: 0; margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+.accountReactDialog [role=alert] { color: #ffabab; font-size: 13px; line-height: 1.5; }
+.accountReactDialog input { appearance: none; -webkit-appearance: none; box-sizing: border-box; width: 100%; min-height: 44px; padding: 11px 14px; border: 1px solid rgba(255,255,255,.16); border-radius: 12px; background: #202020; color: var(--text, #fff); caret-color: var(--text, #fff); font-family: inherit; font-size: 14px; font-weight: 500; line-height: 1.4; outline: none; transition: border-color .15s ease, box-shadow .15s ease; color-scheme: dark; }
+.accountReactDialog input:focus-visible { border-color: rgba(255,255,255,.55); box-shadow: 0 0 0 3px rgba(255,255,255,.08); }
+.accountReactDialog input:disabled { opacity: .55; }
+.accountReactDialog .btns { margin-top: 20px; gap: 12px; }
+#avatarEditorRoot { display: flex; align-items: center; align-self: center; }
+#avatarEditorRoot .avatarUploadBtn { display: inline-flex; align-items: center; justify-content: center; margin: 0; transform: translateY(3px); font-family: inherit; font-size: 13px; font-weight: 600; line-height: 1.2; padding: 10px 16px; cursor: pointer; }
+.profileMovieButton { width: 100%; text-align: left; color: var(--text); font-family: inherit; white-space: normal; }
+.profileMovieButton .miniTxt { display: flex; flex-direction: column; gap: 6px; }
+.profilePage .favMovieRow { display: flex; align-items: flex-start; gap: 16px; margin: 14px 0; }
+.profilePage .favMovieRow .favMeta { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; min-width: 0; flex: 1; }
+.profilePage .favMovieRow .favName { margin: 0; font-family: inherit; font-size: 17px; font-weight: 650; line-height: 1.35; overflow-wrap: anywhere; }
+.profilePage .favMovieRow .favScoreRow { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 0; font-family: inherit; font-size: 12px; font-weight: 500; color: var(--muted); }
+.profilePage .favMovieRow .badgeRed { font-family: inherit; font-size: 13px; font-weight: 600; line-height: 1.2; padding: 5px 10px; font-variant-numeric: tabular-nums; }
+.profilePage .favMovieRow .small { margin: 0; font-size: 12px; font-weight: 400; line-height: 1.5; }
+.profilePage .favCard > .btns { margin-top: 14px; gap: 10px; }
+.seriesDialog > p { font-family: inherit; font-size: 14px; font-weight: 400; line-height: 1.6; color: var(--muted); max-width: 48ch; margin: 12px 0 22px; }
+.seriesDialog > button { margin: 0 12px 8px 0; }
+.seriesControls { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 12px; }
+.seriesControls > .nextBanner { margin: 0; }
+.seriesControls > p { flex-basis: 100%; margin: 0; }
+.seriesControls > .finishPrompt { flex-basis: 100%; }
+.seriesPickerList { display: flex; flex-direction: column; gap: 8px; max-height: 45vh; overflow: auto; margin: 16px 0; }
+.seriesPickerList button { text-align: left; white-space: normal; }
+#nowCard .posterBigImg::after { content: none; }
+#nowCard .posterBigImg img,
+.card:hover #nowCard .posterBigImg img { filter: none; transform: none; }
+.seriesNumberControl { display: flex; align-items: center; width: 160px; max-width: 100%; border: 1px solid var(--border, #444); border-radius: 12px; background: rgba(255,255,255,.04); overflow: hidden; }
+.seriesNumberControl input[type=number] { appearance: textfield; -moz-appearance: textfield; min-width: 0; width: 100%; border: 0 !important; background: transparent !important; padding: 10px 12px; font-family: inherit; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; box-shadow: none; }
+.seriesNumberControl input::-webkit-inner-spin-button,
+.seriesNumberControl input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.seriesNumberButtons { display: flex; gap: 3px; padding: 4px; }
+.seriesNumberButtons button { display: grid; place-items: center; width: 27px; height: 30px; padding: 0; border: 0; border-radius: 7px; background: rgba(255,255,255,.08); color: var(--text); font: 500 17px/1 inherit; cursor: pointer; }
+.seriesNumberButtons button:hover { background: rgba(255,255,255,.18); }
+.seriesNumberButtons button:disabled { opacity: .3; cursor: default; }
+.seriesNumberControl:focus-within { border-color: var(--text); }
+.nowPreferences > summary { cursor: pointer; user-select: none; -webkit-user-select: none; font-family: inherit; font-size: 13px; font-weight: 600; line-height: 1.4; color: var(--muted); padding: 10px 0; }
+#nowEpisodes .seasonHead { width: 100%; box-sizing: border-box; margin: 0; border: 0; border-radius: 0; background: transparent; color: var(--text); text-align: left; font: inherit; display: flex; justify-content: space-between; align-items: center; }
+#nowEpisodes .epMeta { display: flex; flex-direction: column; gap: 4px; }
+#nowEpisodes .epLeft { cursor: pointer; flex: 1; }
+#nowEpisodes .episodeCheckbox { appearance: none; -webkit-appearance: none; width: 24px; height: 24px; min-width: 24px; padding: 0; border: 1px solid rgba(255,255,255,.35); border-radius: 7px; background: rgba(255,255,255,.06); display: grid; place-content: center; cursor: pointer; transition: background .15s, border-color .15s; }
+#nowEpisodes .episodeCheckbox:checked { background: var(--text); border-color: var(--text); }
+#nowEpisodes .episodeCheckbox:checked::after { content: ''; width: 9px; height: 5px; border-left: 2px solid var(--bg, #111); border-bottom: 2px solid var(--bg, #111); transform: rotate(-45deg) translateY(-1px); }
+#nowEpisodes .episodeCheckbox:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
 .ratedReactHost:not(.posterGrid) .itemShell > details.item > summary { padding-top: 12px; }
 .ratedReactHost:not(.posterGrid) .itemShell .sumLeft { padding-right: 104px; }
 .ratedReactHost details.item { animation: none; }
@@ -51,12 +116,13 @@
   margin-left: 0;
 }
 .wishReactPage .wishSegment .segBtn { display: inline-flex; margin: 0; border-radius: 12px; }
-.wishReactHost:not(.posterGrid) .itemShell > details.item > summary { padding-top: 58px; }
-.wishReactHost:not(.posterGrid) .itemShell .sumLeft { padding-right: 204px; }
+.wishReactHost:not(.posterGrid) .itemShell > details.item > summary { padding: 12px; padding-right: 200px; min-height: 108px; box-sizing: border-box; }
+.wishReactHost:not(.posterGrid) .itemShell .sumLeft { padding-right: 0; width: 100%; align-items: center; }
 .wishReactHost .itemShell > .sumRight { left: auto; top: 10px; right: 10px; max-width: calc(100% - 20px); }
 .wishReactHost .itemShell .quickActions { flex-wrap: nowrap; gap: 6px; }
 .wishReactHost .itemShell .quickActions .iconBtn,
 .wishReactHost .itemShell .dragHandle { width: 30px; height: 30px; flex: 0 0 30px; box-sizing: border-box; }
+.wishReactHost .itemShell .dragHandle { padding: 0; }
 .wishReactHost details.item { animation: none; }
 .wishReactHost.posterGrid .itemShell.gridOpen { grid-column: 1 / -1; }
 .wishReactHost.posterGrid .itemShell.gridOpen > details.item > summary { display: flex; padding: 12px; }
@@ -70,6 +136,31 @@
 .wishReactHost.posterGrid .itemShell > details.item > summary { padding-top: 52px; }
 .wishReactHost.posterGrid .itemShell.gridOpen > details.item > summary { padding-top: 12px; }
 .wishReactHost.posterGrid .dragHandle { display: none; }
+.ratedReactPage .posterBigImg::after,
+.wishReactPage .posterBigImg::after { background: transparent; }
+.ratedReactPage .itemBody,
+.wishReactPage .itemBody { transition: max-height .22s ease, opacity .12s ease, transform .22s ease; }
+@supports (interpolate-size: allow-keywords) {
+  .ratedReactPage details.item::details-content,
+  .wishReactPage details.item::details-content { transition: none; }
+}
+.wishReactHost:not(.posterGrid) .itemShell { display: flex; align-self: stretch; }
+.wishReactHost:not(.posterGrid) details.item { width: 100%; }
+.wishReactHost:not(.posterGrid) .itemShell .thumb { width: 72px; height: 108px; }
+.wishReactHost.posterGrid .itemShell { display: flex; align-self: stretch; }
+.wishReactHost.posterGrid .itemShell:not(.gridOpen) details.item { width: 100%; display: flex; flex-direction: column; }
+.wishReactHost.posterGrid .itemShell:not(.gridOpen) details.item > summary { flex: 1; }
+.wishReactHost.posterGrid .itemShell:not(.gridOpen) .metaLine .chip { height: 42px; min-height: 42px; max-height: 42px; }
+.wishReactHost .itemShell.dragging { opacity: .42; }
+.wishReactHost .itemShell.dragging details.item { box-shadow: none; }
+.wishReactHost.posterGrid .itemShell:not(.gridOpen) .titleLine { height: auto; min-height: 100px; overflow: visible; align-content: start; }
+.wishReactHost.posterGrid .itemShell:not(.gridOpen) .metaLine { display: grid; grid-template-columns: minmax(0,1fr); margin-top: 8px; }
+.wishReactHost.posterGrid .itemShell:not(.gridOpen) .metaLine > * { box-sizing: border-box; margin: 0; width: 100%; height: 48px; min-height: 48px; max-height: 48px; overflow: hidden; }
+.wishReactHost.posterGrid .itemShell:not(.gridOpen) .metaLine .chip { font-size: 11px; line-height: 1.25; padding: 6px; }
+.wishReactHost .itemShell.dropTarget { outline: 2px dashed var(--text); outline-offset: 4px; }
+.wishReactHost .itemShell.justMoved { animation: queueMoved .8s ease; }
+@keyframes queueMoved { 0%,40% { background: rgba(255,255,255,.22); transform: translateY(-4px); } 100% { background: transparent; transform: none; } }
+@media(max-width:680px) { .wishReactHost:not(.posterGrid) .itemShell > details.item > summary { padding: 50px 12px 12px; } }
 .catalogGrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:12px; }
 .catalogCard { position:relative; border-radius:8px; overflow:hidden; }
 .catalogLink { display:flex; flex-direction:column; gap:5px; padding:8px; color:inherit; text-decoration:none; overflow-wrap:anywhere; }
