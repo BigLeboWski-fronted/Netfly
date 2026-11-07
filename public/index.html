@@ -388,7 +388,7 @@ body.theme-cinema .searchMovieCard{ --search-card-bg:#201710; }
 
 /* Form */
 label{display:block; font-size: 13px; color: var(--muted); margin-bottom: 6px;}
-input[type="text"], input[type="number"], input[type="password"], input[type="email"], textarea, select{
+input[type="text"], input[type="search"], input[type="number"], input[type="password"], input[type="email"], textarea, select{
   width:100%;
   padding: 12px 12px;
   border-radius: 14px;
@@ -398,7 +398,7 @@ input[type="text"], input[type="number"], input[type="password"], input[type="em
   outline:none;
   transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
 }
-input[type="text"]:focus, input[type="number"]:focus, input[type="password"]:focus, input[type="email"]:focus, textarea:focus, select:focus{
+input[type="text"]:focus, input[type="search"]:focus, input[type="number"]:focus, input[type="password"]:focus, input[type="email"]:focus, textarea:focus, select:focus{
   border-color: rgba(255,255,255,.55);
   box-shadow: var(--ring);
   background: rgba(255,255,255,.06);
@@ -2903,7 +2903,8 @@ html{ scrollbar-gutter:stable; }
 
     <!-- RATED (full width) -->
     <section id="view-rated" class="hidden view">
-      <section class="card">
+      <div id="ratedRoot"></div>
+      <section id="legacyRatedCard" class="card hidden">
         <div class="listHeader">
           <div class="listTop">
             <h2>Оценённые</h2>
@@ -2987,7 +2988,7 @@ html{ scrollbar-gutter:stable; }
           <div class="small" id="stats"></div>
         </div>
 
-        <div class="items" id="items"></div>
+        <div class="items" id="legacyRatedItems"></div>
 
         <div class="summary" style="margin-top:12px;">
           <div class="small" id="pageInfo"></div>
@@ -2999,7 +3000,12 @@ html{ scrollbar-gutter:stable; }
       </section>
     </section>
 
-        <!-- WISH MOVIES (full width + posters) -->
+        <!-- WISH (React) -->
+    <section id="view-wish" class="hidden view">
+      <div id="wishRoot"></div>
+    </section>
+
+        <!-- WISH MOVIES legacy bridge -->
     <section id="view-wish-movies" class="hidden view">
       <section class="card">
         <div class="listHeader">
@@ -3027,7 +3033,7 @@ html{ scrollbar-gutter:stable; }
           <div class="small" id="wishMoviesStats"></div>
         </div>
 
-        <div id="wishMoviesList" style="display:flex; flex-direction:column; gap:10px;"></div>
+        <div id="legacyWishMoviesList" style="display:flex; flex-direction:column; gap:10px;"></div>
       </section>
     </section>
 
@@ -3059,7 +3065,7 @@ html{ scrollbar-gutter:stable; }
           <div class="small" id="wishSeriesStats"></div>
         </div>
 
-        <div id="wishSeriesList" style="display:flex; flex-direction:column; gap:10px;"></div>
+        <div id="legacyWishSeriesList" style="display:flex; flex-direction:column; gap:10px;"></div>
       </section>
     </section>
 
@@ -3454,6 +3460,7 @@ html{ scrollbar-gutter:stable; }
       viewRated: document.getElementById("view-rated"),
       viewWishMovies: document.getElementById("view-wish-movies"),
       viewWishSeries: document.getElementById("view-wish-series"),
+      viewWish: document.getElementById("view-wish"),
       viewProfile: document.getElementById("view-profile"),
       viewNow: document.getElementById("view-now"),
       viewSettings: document.getElementById("view-settings"),
@@ -3508,7 +3515,7 @@ html{ scrollbar-gutter:stable; }
       omdbResults: document.getElementById("omdbResults"),
       omdbStatus: document.getElementById("omdbStatus"),
       // rated list
-      items: document.getElementById("items"),
+      items: document.getElementById("legacyRatedItems"),
       stats: document.getElementById("stats"),
       search: document.getElementById("search"),
       sort: document.getElementById("sort"),
@@ -3526,8 +3533,8 @@ html{ scrollbar-gutter:stable; }
       nextPageBtn: document.getElementById("nextPageBtn"),
       pageInfo: document.getElementById("pageInfo"),
       // wish
-      wishMoviesList: document.getElementById("wishMoviesList"),
-      wishSeriesList: document.getElementById("wishSeriesList"),
+      wishMoviesList: document.getElementById("legacyWishMoviesList"),
+      wishSeriesList: document.getElementById("legacyWishSeriesList"),
       wishMoviesSearch: document.getElementById("wishMoviesSearch"),
       wishSeriesSearch: document.getElementById("wishSeriesSearch"),
       wishMoviesStats: document.getElementById("wishMoviesStats"),
@@ -3571,10 +3578,19 @@ html{ scrollbar-gutter:stable; }
 
     // last fetched OMDb metadata for form (to store on add)
     let omdbMetaDraft = null;
+    // When a queued item is moved to Rated it starts without scores. Keep the
+    // form in edit mode so that the same editor can finish its rating.
+    let editingMovieId = null;
 
     // Rated pagination
     const PAGE_SIZE = 20;
     let ratedPage = 1;
+    let ratedReactState = {
+      filters: { query:"", sort:"new", minAvg:"0", tag:"", year:"", genre:"", director:"", actor:"", status:"", onlyFav:false },
+      page: 1,
+      viewMode: localStorage.getItem("netfly_list_view_v1_rated") === "grid" ? "grid" : "list",
+      filtersOpen: false,
+    };
 
     // Wish drag/drop
     let dragId = null;
@@ -4196,10 +4212,11 @@ function loadProfile(){
       els.viewRated.classList.toggle("hidden", viewId !== "rated");
       els.viewSearch?.classList.toggle("hidden", viewId !== "search");
       els.viewMovie?.classList.toggle("hidden", viewId !== "movie" && viewId !== "person");
+      els.viewWish?.classList.toggle("hidden", viewId !== "wish");
       if(els.viewNow) els.viewNow.classList.toggle("hidden", viewId !== "now");
       if(viewId === "wish"){
-        els.viewWishMovies.classList.toggle("hidden", wishKindActive !== "movie");
-        els.viewWishSeries.classList.toggle("hidden", wishKindActive !== "series");
+        els.viewWishMovies.classList.add("hidden");
+        els.viewWishSeries.classList.add("hidden");
       } else {
         els.viewWishMovies.classList.add("hidden");
         els.viewWishSeries.classList.add("hidden");
@@ -4216,6 +4233,7 @@ function loadProfile(){
             home: els.viewHome,
             evaluate: els.viewEval,
             rated: els.viewRated,
+            wish: els.viewWish,
             search: els.viewSearch,
             movie: els.viewMovie,
             person: els.viewMovie,
@@ -4258,16 +4276,109 @@ function loadProfile(){
       wishKindActive = k;
       syncWishToggleButtons();
       if(currentView === "wish"){
-        els.viewWishMovies.classList.toggle("hidden", wishKindActive !== "movie");
-        els.viewWishSeries.classList.toggle("hidden", wishKindActive !== "series");
+        els.viewWishMovies.classList.add("hidden");
+        els.viewWishSeries.classList.add("hidden");
         renderWish();
       }
     }
 
-    function renderWish(){
+    function renderWishLegacy(){
       syncWishToggleButtons();
       if(wishKindActive === "series") renderWishSeries();
       else renderWishMovies();
+    }
+
+    let wishReactState = {
+      kind: "movie",
+      viewMode: localStorage.getItem("netfly_list_view_v1_wish") === "grid" ? "grid" : "list",
+      query: "",
+    };
+
+    function renderWish(){
+      if(window.NetflyUI?.wish){
+        window.NetflyUI.wish({
+          movies,
+          initialKind: wishReactState.kind,
+          initialViewMode: wishReactState.viewMode,
+          initialQuery: wishReactState.query,
+          onToggleFavorite: toggleFavorite,
+          onOpenPerson: openPersonByName,
+          onStateChange: nextState => {
+            if(nextState.order){
+              const order = new Map(nextState.order.map((id, index) => [id, index + 1]));
+              movies.forEach(movie => { if(order.has(movie.id)) movie.queueOrder = order.get(movie.id); });
+              saveMovies();
+              wishReactState = { ...wishReactState, ...nextState };
+              return;
+            }
+            wishReactState = { ...wishReactState, ...nextState };
+            wishKindActive = nextState.kind;
+            localStorage.setItem("netfly_list_view_v1_wish", nextState.viewMode);
+          },
+          onReason: (id, value) => {
+            const movie = movies.find(item => item.id === id);
+            if(!movie) return;
+            movie.wishReason = value;
+            saveMovies();
+          },
+          onReorder: (kind, ids) => {
+            const order = new Map(ids.map((id, index) => [id, index + 1]));
+            movies.forEach(movie => {
+              if(order.has(movie.id) && (movie.status || "watched") === "wish" && getWishKindForMovie(movie) === kind){
+                movie.queueOrder = order.get(movie.id);
+              }
+            });
+            saveMovies();
+            renderWish();
+            toast("Порядок сохранён");
+          },
+          onMove: id => {
+            const movie = movies.find(item => item.id === id);
+            if(!movie) return;
+            movie.status = "watched";
+            movie.queueOrder = null;
+            // React list selectors are memoized by array identity. Give the
+            // Rated page a new collection so the moved item appears at once.
+            movies = movies.slice();
+            saveMovies();
+            toast("Перемещено в оценённые", "Теперь можно поставить оценку");
+            renderEverything();
+            goTo("rated", { openId: movie.id });
+          },
+          onDelete: deleteWishFromReact,
+          onClear: kind => {
+            const list = movies.filter(movie => (movie.status || "watched") === "wish" && getWishKindForMovie(movie) === kind);
+            if(!list.length) return;
+            confirmQueueClear(kind).then(confirmed => {
+              if(!confirmed) return;
+              movies = movies.filter(movie => !((movie.status || "watched") === "wish" && getWishKindForMovie(movie) === kind));
+              saveMovies();
+              renderEverything();
+            });
+          },
+          onRandom: (kind, list) => {
+            if(!list.length){ toast("Очередь пуста", "Добавь что-нибудь в “Буду смотреть”."); return; }
+            const choice = list[Math.floor(Math.random() * list.length)];
+            wishReactState = { ...wishReactState, kind };
+            wishKindActive = kind;
+            // Render the selected kind first, then open the card on the next
+            // frame. This prevents the controlled <details> from fighting the
+            // random-selection update and visibly jerking.
+            renderWish();
+            requestAnimationFrame(() => window.NetflyUI.wishOpen?.(choice.id));
+            toast("Случайный выбор", choice.name || "Без названия");
+          },
+        });
+        return;
+      }
+      renderWishLegacy();
+    }
+
+    async function deleteWishFromReact(id){
+      const movie = movies.find(item => item.id === id);
+      const name = movie?.name ? `«${movie.name}»` : "этот элемент";
+      if(!await confirmMovieDeletion(name)) return;
+      deleteMovie(id, { muteAnim: true });
     }
 
     document.addEventListener("click", (e) => {
@@ -5765,6 +5876,25 @@ document.addEventListener("click", (e) => {
       return max + 1;
     }
 
+    function startMovieRating(movie){
+      if(!movie) return;
+      editingMovieId = movie.id;
+      els.movieName.value = movie.name || "";
+      els.director.value = movie.director || "";
+      els.year.value = movie.year ?? "";
+      els.status.value = movie.status && movie.status !== "wish" ? movie.status : "watched";
+      els.tags.value = Array.isArray(movie.tags) ? movie.tags.join(", ") : "";
+      els.notes.value = movie.notes || "";
+      omdbMetaDraft = movie.omdb ? { ...movie.omdb } : null;
+      CRITERIA.forEach(c => { current[c.key] = clamp(Number(movie.scores?.[c.key] ?? 0), 0, 10); });
+      els.addBtn.textContent = "Сохранить оценку";
+      els.omdbStatus.textContent = "Редактирование оценки";
+      hideResults();
+      renderSliders();
+      updateTotals();
+      goTo("evaluate");
+    }
+
     function addMovie(){
       const name = els.movieName.value.trim();
       if(!name){
@@ -5780,6 +5910,41 @@ document.addEventListener("click", (e) => {
       const status = els.status.value || "watched";
       const tags = parseTags(els.tags.value);
       const notes = els.notes.value.trim();
+
+      if(editingMovieId){
+        const existing = movies.find(item => item.id === editingMovieId);
+        if(existing){
+          existing.name = name;
+          existing.director = director;
+          existing.year = year;
+          existing.status = status === "wish" ? "watched" : status;
+          existing.tags = tags;
+          existing.notes = notes;
+          existing.scores = { ...current };
+          existing.queueOrder = null;
+          if(omdbMetaDraft) existing.omdb = { ...omdbMetaDraft };
+          movies = movies.slice();
+          saveMovies();
+          toast("Оценка сохранена", name);
+          editingMovieId = null;
+          els.addBtn.textContent = "Добавить";
+          els.movieName.value = "";
+          els.director.value = "";
+          els.year.value = "";
+          els.status.value = "watched";
+          els.tags.value = "";
+          els.notes.value = "";
+          omdbMetaDraft = null;
+          els.omdbStatus.textContent = "";
+          hideResults();
+          resetSliders();
+          renderEverything();
+          goTo("rated", { openId: existing.id });
+          return;
+        }
+        editingMovieId = null;
+        els.addBtn.textContent = "Добавить";
+      }
 
       const id = makeId();
 
@@ -5798,7 +5963,7 @@ document.addEventListener("click", (e) => {
         omdb: omdbMetaDraft ? { ...omdbMetaDraft } : null,
       };
 
-      movies.push(movie);
+      movies = [...movies, movie];
       saveMovies();
 
       // UX feedback
@@ -5831,6 +5996,7 @@ document.addEventListener("click", (e) => {
       if(existing){
         existing.status = "wish";
         if(!existing.queueOrder) existing.queueOrder = getNextWishOrder(getWishKindForMovie(existing));
+        movies = movies.slice();
         saveMovies();
         // UX feedback
         toast("Перемещено в 'Буду смотреть'", existing.name || "Без названия");
@@ -5862,7 +6028,7 @@ document.addEventListener("click", (e) => {
         omdb: { ...omdbMetaDraft },
       };
 
-      movies.push(movie);
+      movies = [...movies, movie];
       saveMovies();
       // UX feedback
       toast("Добавлено в 'Буду смотреть'", movie.name || "Без названия");
@@ -5879,7 +6045,12 @@ document.addEventListener("click", (e) => {
       // opts:
       // - muteAnim: disable entry animations for the following rerender (fallback path)
       // - softEl: details element to remove in-place (preferred to avoid list flicker)
-      const softEl = opts.softEl?.closest('.itemShell') || opts.softEl || null;
+      let softEl = opts.softEl?.closest('.itemShell') || opts.softEl || null;
+      // React owns these visible lists now. Mutating their DOM directly while
+      // React is reconciling can produce a stale-node DOMException.
+      if((currentView === "rated" && window.NetflyUI?.rated) || (currentView === "wish" && window.NetflyUI?.wish)){
+        softEl = null;
+      }
 
       const m = movies.find(x => x.id === id);
       const name = m?.name || "Без названия";
@@ -5980,6 +6151,29 @@ document.addEventListener("click", (e) => {
         dialog.querySelector('.deleteConfirmName').textContent = name;
         dialog.addEventListener('close', () => {
           const confirmed = dialog.returnValue === 'delete';
+          dialog.remove();
+          resolve(confirmed);
+        }, { once:true });
+        dialog.addEventListener('click', event => {
+          if(event.target === dialog){
+            const rect = dialog.getBoundingClientRect();
+            if(event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dialog.close('cancel');
+          }
+        });
+        document.body.appendChild(dialog);
+        dialog.showModal();
+      });
+    }
+
+    function confirmQueueClear(kind){
+      return new Promise(resolve => {
+        const label = kind === "series" ? "сериалы" : "фильмы";
+        const dialog = document.createElement('dialog');
+        dialog.className = 'deleteConfirm';
+        dialog.setAttribute('aria-labelledby', 'queueClearTitle');
+        dialog.innerHTML = `<form method="dialog"><h3 id="queueClearTitle">Очистить очередь?</h3><p class="deleteConfirmName">Удалить все ${label} из очереди?</p><p class="deleteConfirmHint">Эти элементы будут убраны из «Буду смотреть». Это действие нельзя отменить.</p><div class="deleteConfirmActions"><button value="cancel" autofocus>Отмена</button><button class="danger" value="clear">Очистить</button></div></form>`;
+        dialog.addEventListener('close', () => {
+          const confirmed = dialog.returnValue === 'clear';
           dialog.remove();
           resolve(confirmed);
         }, { once:true });
@@ -6220,7 +6414,7 @@ document.addEventListener("click", (e) => {
       return block;
     }
 
-    function renderRated(){
+    function renderRatedLegacy(){
       const list = getRatedFilteredSorted();
       const q = normalize(els.search.value);
 
@@ -6564,7 +6758,60 @@ const actorsBlock = buildActorsBlock(movie, q);
       renderStats();
     }
 
+    function renderRated(){
+      if(window.NetflyUI?.rated){
+        window.NetflyUI.rated({
+          movies,
+          pageSize: PAGE_SIZE,
+          filters: ratedReactState.filters,
+          page: ratedReactState.page,
+          viewMode: ratedReactState.viewMode,
+          onToggleFavorite: toggleFavorite,
+          onDelete: deleteRatedFromReact,
+          onRate: startMovieRating,
+          onOpenPerson: openPersonByName,
+          onStateChange: (nextState) => {
+            ratedReactState = nextState;
+            ratedPage = nextState.page;
+            localStorage.setItem("netfly_list_view_v1_rated", nextState.viewMode);
+          },
+          onClearAll: () => {
+            const rated = movies.filter(m => (m.status || "watched") !== "wish");
+            if(!rated.length || !confirm("Очистить все оценённые? Это действие нельзя отменить.")) return;
+            movies = movies.filter(m => (m.status || "watched") === "wish");
+            saveMovies();
+            renderEverything();
+          },
+        });
+        return;
+      }
+      renderRatedLegacy();
+    }
+
+    async function deleteRatedFromReact(id, element){
+      const movie = movies.find(item => item.id === id);
+      const name = movie?.name ? `«${movie.name}»` : "этот элемент";
+      if(!await confirmMovieDeletion(name)) return;
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if(element && !reduceMotion && typeof element.animate === "function"){
+        element.animate([
+          { opacity: 1, transform: 'translateY(0) scale(1)' },
+          { opacity: 0, transform: 'translateY(8px) scale(.98)' },
+        ], { duration: 180, easing: 'ease-out' }).finished
+          .catch(() => {})
+          .finally(() => deleteMovie(id, { muteAnim: true }));
+        return;
+      }
+      // Let React receive the updated movies array immediately. Removing the
+      // DOM node by hand leaves the React tree stale and can blank the list.
+      deleteMovie(id, { muteAnim: true });
+    }
+
     function openRatedItem(id){
+      if(window.NetflyUI?.ratedOpen){
+        window.NetflyUI.ratedOpen(id);
+        return;
+      }
       const all = getRatedFilteredSorted();
       const idx = all.findIndex(m => m.id === id);
       if(idx >= 0){
@@ -6593,6 +6840,10 @@ const actorsBlock = buildActorsBlock(movie, q);
     }
 
     function openWishItem(id, kind){
+      if(window.NetflyUI?.wishOpen){
+        window.NetflyUI.wishOpen(id);
+        return;
+      }
       const k = kind === "series" ? "series" : "movie";
       const listEl = k === "series" ? els.wishSeriesList : els.wishMoviesList;
       if(!listEl) return;
@@ -8069,7 +8320,6 @@ if(finishToRated){
     function renderEverything(){
       if(currentView === "home") renderHome();
       if(currentView === "rated") renderRated();
-      if(currentView === "wish") renderWish();
       if(currentView === "wish") renderWish();
       if(currentView === "profile") renderProfile();
       if(currentView === "now") renderNow();

@@ -8,6 +8,68 @@
   color: var(--text);
 }
 #brandRoot { display: contents; }
+.ratedReactHost:not(.posterGrid) .itemShell > details.item > summary { padding-top: 12px; }
+.ratedReactHost:not(.posterGrid) .itemShell .sumLeft { padding-right: 104px; }
+.ratedReactHost details.item { animation: none; }
+.ratedReactHost.posterGrid .itemShell.gridOpen { grid-column: 1 / -1; }
+.ratedReactHost.posterGrid .itemShell.gridOpen > details.item > summary { display: flex; padding: 12px; }
+.ratedReactHost.posterGrid .itemShell.gridOpen .sumLeft { display: flex; gap: 12px; }
+.ratedReactHost.posterGrid .itemShell.gridOpen .thumb { width: 62px; height: 92px; margin-bottom: 0; }
+.ratedReactHost.posterGrid .itemShell.gridOpen .sumText { min-height: 0; display: block; }
+.ratedReactHost.posterGrid .itemShell.gridOpen .titleLine { height: auto; min-height: 0; }
+.ratedReactHost.posterGrid .itemShell.gridOpen .metaLine { margin-top: 6px; align-items: center; gap: 10px; }
+.ratedReactHost.posterGrid .itemShell.gridOpen .metaLine .chip { width: auto; min-height: 0; display: inline-flex; line-height: normal; }
+.ratedReactHost.posterGrid .itemShell.gridOpen .itemBody > .posterBig { display: flex; }
+.ratedReactHost.posterGrid .itemShell > .sumRight { left: auto; top: 16px; right: 16px; max-width: calc(100% - 32px); }
+.ratedReactHost.posterGrid .itemShell .quickActions { flex-wrap: nowrap; gap: 6px; }
+.ratedReactHost.posterGrid .itemShell .quickActions .iconBtn { width: 28px; height: 28px; flex: 0 0 28px; box-sizing: border-box; }
+.ratedReactPage .controls { grid-template-columns: 1fr; }
+.ratedReactPage .ratedReactFilters {
+  max-height: 720px;
+  opacity: 1;
+  transform: translateY(0);
+  overflow: hidden;
+  transition: max-height .38s cubic-bezier(.22,1,.36,1), opacity .24s ease, transform .38s cubic-bezier(.22,1,.36,1), padding .38s ease, border-color .38s ease;
+  will-change: max-height, opacity, transform;
+}
+.ratedReactPage .ratedReactFilters.isClosed {
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-color: transparent;
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+}
+.wishReactPage .controls { grid-template-columns: 1fr; }
+.wishReactPage .wishSegment {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: max-content;
+  padding: 4px;
+  margin-left: 0;
+}
+.wishReactPage .wishSegment .segBtn { display: inline-flex; margin: 0; border-radius: 12px; }
+.wishReactHost:not(.posterGrid) .itemShell > details.item > summary { padding-top: 58px; }
+.wishReactHost:not(.posterGrid) .itemShell .sumLeft { padding-right: 204px; }
+.wishReactHost .itemShell > .sumRight { left: auto; top: 10px; right: 10px; max-width: calc(100% - 20px); }
+.wishReactHost .itemShell .quickActions { flex-wrap: nowrap; gap: 6px; }
+.wishReactHost .itemShell .quickActions .iconBtn,
+.wishReactHost .itemShell .dragHandle { width: 30px; height: 30px; flex: 0 0 30px; box-sizing: border-box; }
+.wishReactHost details.item { animation: none; }
+.wishReactHost.posterGrid .itemShell.gridOpen { grid-column: 1 / -1; }
+.wishReactHost.posterGrid .itemShell.gridOpen > details.item > summary { display: flex; padding: 12px; }
+.wishReactHost.posterGrid .itemShell.gridOpen .sumLeft { display: flex; gap: 12px; }
+.wishReactHost.posterGrid .itemShell.gridOpen .thumb { width: 62px; height: 92px; margin-bottom: 0; }
+.wishReactHost.posterGrid .itemShell.gridOpen .sumText { min-height: 0; display: block; }
+.wishReactHost.posterGrid .itemShell.gridOpen .titleLine { height: auto; min-height: 0; }
+.wishReactHost.posterGrid .itemShell.gridOpen .metaLine { margin-top: 6px; align-items: center; gap: 10px; }
+.wishReactHost.posterGrid .itemShell.gridOpen .metaLine .chip { width: auto; min-height: 0; display: inline-flex; line-height: normal; }
+.wishReactHost.posterGrid .itemShell.gridOpen .itemBody > .posterBig { display: flex; }
+.wishReactHost.posterGrid .itemShell > details.item > summary { padding-top: 52px; }
+.wishReactHost.posterGrid .itemShell.gridOpen > details.item > summary { padding-top: 12px; }
+.wishReactHost.posterGrid .dragHandle { display: none; }
 .catalogGrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:12px; }
 .catalogCard { position:relative; border-radius:8px; overflow:hidden; }
 .catalogLink { display:flex; flex-direction:column; gap:5px; padding:8px; color:inherit; text-decoration:none; overflow-wrap:anywhere; }

@@ -21,6 +21,7 @@ async function test() {
   const settle = () => new Promise(resolve => setTimeout(resolve, 60));
   try {
     window.scrollTo = () => {};
+    window.HTMLElement.prototype.scrollIntoView = () => {};
     window.matchMedia = () => ({ matches: false });
     window.CSS = { escape: value => value };
     window.fetch = async url => ({
@@ -81,7 +82,9 @@ async function test() {
     run(`movies = [
       { id: 'rated-test', name: 'Rated', status: 'watched', scores: {} },
       { id: 'wish-test', name: 'Wish', status: 'wish', scores: {},
-        tags: ['драма'], queueOrder: 1, omdb: { type: 'movie' } }
+        tags: ['драма'], queueOrder: 1, omdb: { type: 'movie' } },
+      { id: 'wish-move', name: 'Move me', status: 'wish', scores: {},
+        queueOrder: 2, omdb: { type: 'movie' } }
     ]; goTo('rated');`);
     await settle();
     const ratedCard = doc.querySelector('#items details');
@@ -96,12 +99,24 @@ async function test() {
     run("goTo('wish');");
     await settle();
     const wishShell = doc.querySelector('#wishMoviesList .itemShell');
-    const moveButton = wishShell.querySelector('[title="Переместить в оценённые"]');
+    const moveShell = doc.querySelector('#wishMoviesList .itemShell[data-id="wish-move"]');
+    const moveButton = moveShell.querySelector('[title="Переместить в оценённые"]');
     wishShell.querySelector('.favoriteToggle').click();
     assert.equal(moveButton.textContent, '✓');
     assert.equal(doc.querySelectorAll('summary button, summary a[href], summary input, summary select, summary textarea, summary [tabindex]').length, 0);
     assert.equal(wishShell.querySelector('.tagsInline').closest('.itemBody') !== null, true);
+    moveButton.click();
+    await settle();
+    assert.equal(doc.querySelectorAll('#items .itemShell').length, 2);
+    assert.ok(doc.querySelector('#items [title="Поставить оценку"]'));
+    doc.querySelector('#items [title="Поставить оценку"]').click();
+    await settle();
+    assert.equal(window.location.pathname, '/evaluate');
+    assert.equal(doc.querySelector('#addBtn').textContent, 'Сохранить оценку');
+    run("goTo('wish');");
+    await settle();
     run("deleteMovie('wish-test', { softEl: document.querySelector('#wishMoviesList details') });");
+    await settle();
     assert.equal(doc.querySelectorAll('#wishMoviesList .itemShell').length, 0);
     assert.deepEqual(errors, []);
 
