@@ -1,4 +1,15 @@
 import React, { useState } from 'react';
+import { Register } from './Register.jsx';
+import { PasswordRecovery } from './PasswordRecovery.jsx';
+
+export function AuthScreen({ request, onSuccess }) {
+  const [mode,setMode]=useState('login');
+  return <div className="authCard"><div className="authLogo">Net<span className="red">fly</span></div><div className="authSub">Твой личный трекер фильмов и сериалов</div>
+    {mode !== 'forgot' && <div className="authTabs"><button type="button" className={'authTab'+(mode==='login'?' active':'')} onClick={()=>setMode('login')}>Войти</button><button type="button" className={'authTab'+(mode==='register'?' active':'')} onClick={()=>setMode('register')}>Регистрация</button></div>}
+    {mode==='login'?<Login request={request} onSuccess={onSuccess}/>:mode==='register'?<Register request={request} onSuccess={onSuccess}/>:<PasswordRecovery request={request} onDone={()=>setMode('login')}/>}
+    {mode==='login'&&<button type="button" className="authForgotLink" onClick={()=>setMode('forgot')}>Забыл пароль</button>}
+  </div>;
+}
 
 export function Login({ request, onSuccess }) {
   const [email, setEmail] = useState(''), [password, setPassword] = useState('');

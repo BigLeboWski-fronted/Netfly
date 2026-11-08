@@ -8,6 +8,17 @@
   color: var(--text);
 }
 #brandRoot { display: contents; }
+.reactAvatarImage { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
+.profileBtn:has(.reactAvatarImage) { padding: 0; overflow: hidden; }
+.passwordRecovery { margin-top: 28px; }
+.recoveryHeading { margin-bottom: 6px; }
+.recoveryStep { display: block; color: var(--muted); font-family: inherit; font-size: 10px; font-weight: 600; letter-spacing: .12em; margin-bottom: 10px; }
+.recoveryHeading h2 { margin: 0 0 10px; font-family: inherit; font-size: 23px; font-weight: 650; line-height: 1.25; }
+.recoveryHeading p { margin: 0; color: var(--muted); font-family: inherit; font-size: 13px; line-height: 1.6; }
+.passwordRecovery .authSubmit { margin-top: 8px; min-height: 44px; font-size: 14px; font-weight: 600; border-radius: 12px; }
+.passwordRecovery .recoveryBack { align-self: center; border: 0; background: transparent; padding: 8px 12px; color: var(--muted); font-family: inherit; font-size: 12px; font-weight: 500; cursor: pointer; }
+.passwordRecovery .recoveryBack:hover { color: var(--text); }
+.authForgotLink { display: block; margin: 12px auto 0; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 13px; text-decoration: underline; cursor: pointer; }
 .ratedReactHost .animatedRated .itemBody { opacity: 1; transform: none; max-height: none; transition: none; padding-bottom: 12px; }
 .ratedReactHost .animatedRated::details-content { block-size: auto; opacity: 1; transition: none; }
 .evaluateReact input:not([type=range]), .evaluateReact textarea, .evaluateReact select { box-sizing: border-box; width: 100%; border: 1px solid rgba(255,255,255,.16); border-radius: 12px; background: #202020; color: var(--text); padding: 11px 13px; font-family: inherit; font-size: 14px; color-scheme: dark; }

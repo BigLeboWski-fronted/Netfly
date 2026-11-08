@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useResource } from '../hooks/useResource.js';
 
 const expandedSeasons = new Map();
 
@@ -68,8 +69,18 @@ export function SeriesEpisodes({ seriesId, seasons = {}, watched = {}, onToggle 
   </div>);
 }
 
-export function SeriesCalendar({ description, error, loading }) {
-  return <><h3>Календарь серий</h3><p className="small" title="Дата оригинального выхода по TMDB. Выход озвучки может отличаться.">{loading ? 'Загружаю даты…' : error || description}</p></>;
+export function SeriesCalendar({ imdbId, tmdbId }) {
+  const params = new URLSearchParams({imdb:imdbId || ''});
+  if(tmdbId) params.set('id',tmdbId);
+  const resource = useResource(imdbId ? `/api/tmdb/calendar?${params}` : null);
+  if(!imdbId) return null;
+  const data=resource.data || {}, episode=data.next;
+  let description=data.status==='Ended'?'Сериал завершён.':data.status==='Canceled'?'Сериал закрыт.':'Дата следующей серии пока не объявлена.';
+  if(episode?.air_date){
+    const date=new Date(episode.air_date+'T12:00:00');
+    if(Number.isFinite(date.getTime())) description=`Сезон ${episode.season_number} · Серия ${episode.episode_number} · ${date.toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})}`;
+  }
+  return <><h3>Календарь серий</h3>{resource.loading ? <p className="small" role="status">Загружаю даты…</p> : resource.error ? <div role="alert"><p className="small">{resource.error}</p><button type="button" onClick={resource.retry}>Повторить</button></div> : <p className="small" title="Дата оригинального выхода по TMDB. Выход озвучки может отличаться.">{description}</p>}</>;
 }
 
 export function SeriesHomeWidget({ state, progress, next, weeks, onOpen, onNext }) {
@@ -92,7 +103,7 @@ export function SeriesHomeWidget({ state, progress, next, weeks, onOpen, onNext 
   </div></section>;
 }
 
-export function SeriesProgress({ state, progress, next, onNext, onSettings, onReset }) {
+export function SeriesProgress({ state, progress, next, onNext, onSettings, onReset, children }) {
   const [confirmReset, setConfirmReset] = useState(false);
   const { watched, total, pct } = progress;
   if (!state.imdbID) return <div className="nowEmpty">Пока ничего не выбрано. Выбери сериал из очереди.</div>;
@@ -113,7 +124,7 @@ export function SeriesProgress({ state, progress, next, onNext, onSettings, onRe
         </details>
       </div>
     </div>
-    <div id="nowEpisodes" className="episodeGrid" />
+    <div id="nowEpisodes" className="episodeGrid">{children}</div>
     {confirmReset && <SeriesDialog title="Сбросить прогресс?" onClose={() => setConfirmReset(false)}><p>Отметки просмотренных серий, история просмотра и стрик будут очищены. Это действие нельзя отменить.</p><button type="button" className="danger" onClick={() => { setConfirmReset(false); onReset(); }}>Сбросить прогресс</button></SeriesDialog>}
   </>;
 }

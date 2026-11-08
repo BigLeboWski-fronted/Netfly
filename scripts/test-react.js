@@ -21,6 +21,7 @@ async function test() {
   const settle = () => new Promise(resolve => setTimeout(resolve, 60));
   try {
     window.scrollTo = () => {};
+    window.HTMLDialogElement.prototype.showModal = function() { this.open = true; };
     window.HTMLElement.prototype.scrollIntoView = () => {};
     window.matchMedia = () => ({ matches: false });
     window.CSS = { escape: value => value };
@@ -46,7 +47,7 @@ async function test() {
     run(`movies = [{
       id: 'fixture', name: 'Тестовый фильм', status: 'watched',
       createdAt: Date.now(), scores: { overall: 9, engage: 9, emotions: 9 }
-    }]; renderHome();`);
+    }]; saveMovies(); renderHome();`);
     await settle();
     assert.match(doc.querySelector('#recentWrap').textContent, /Тестовый фильм/);
     assert.match(doc.querySelector('#recentWrap .scoreBadge').textContent, /9/);
@@ -68,15 +69,29 @@ async function test() {
     assert.equal(window.location.pathname, '/');
     assert.equal(doc.querySelector('#nav [aria-current]').textContent, 'Главная');
 
-    for (let i = 0; i < 5; i++) run('renderNav(); renderHome();');
+    for (let i = 0; i < 5; i++) run('renderHome();');
     await settle();
     assert.equal(doc.querySelectorAll('#nav button').length, 5);
     assert.equal(doc.querySelectorAll('#recentWrap button').length, 1);
-    run('movies = []; renderHome();');
+    run('movies = []; saveMovies(); renderHome();');
     await settle();
     assert.equal(doc.querySelectorAll('#recentWrap button').length, 0);
     assert.match(doc.querySelector('#recentWrap').textContent, /Пока нет/);
     assert.deepEqual(errors, []);
+
+    run("goTo('settings');");
+    await settle();
+    for (const label of ['Имя пользователя', 'Email', 'Пароль']) {
+      doc.querySelector(`[aria-label="Изменить: ${label}"]`).click();
+      await settle();
+      assert.equal(doc.querySelector('#accountReactRoot dialog').open, true);
+      const cancel = [...doc.querySelectorAll('#accountReactRoot button')].find(button => button.textContent === 'Отмена');
+      cancel.click();
+      await settle();
+      assert.equal(doc.querySelector('#accountReactRoot dialog'), null);
+    }
+    run("goTo('home');");
+    await settle();
 
     // The React home widget persists episode marks through the existing state.
     run(`nowState.imdbID = 'tt-series-test'; nowState.title = 'Тестовый сериал';
@@ -84,7 +99,7 @@ async function test() {
         totalEpisodes: 2, seasons: { '1': [
           { Episode: '1', Title: 'Первая' }, { Episode: '2', Title: 'Вторая' }
         ] }
-      }; renderNowHomeWidget();`);
+      }; saveEpCache(); saveNowState();`);
     await settle();
     assert.match(doc.querySelector('#nowWidgetHome').textContent, /Тестовый сериал/);
     doc.querySelector('#nowWidgetHome .primary').click();
@@ -92,7 +107,7 @@ async function test() {
     assert.equal(run("nowState.watched.S1E1"), true);
     assert.equal(JSON.parse(window.localStorage.getItem('netfly_now_v1')).watched.S1E1, true);
     assert.match(doc.querySelector('#nowWidgetHome .nowSub').textContent, /1\/2/);
-    run("nowState.imdbID = null; renderNowHomeWidget();");
+    run("nowState.imdbID = null; saveNowState();");
     await settle();
     assert.equal(doc.querySelector('#nowWidgetHome').textContent, '');
 
@@ -103,13 +118,14 @@ async function test() {
         tags: ['драма'], queueOrder: 1, omdb: { type: 'movie' } },
       { id: 'wish-move', name: 'Move me', status: 'wish', scores: {},
         queueOrder: 2, omdb: { type: 'movie' } }
-    ]; goTo('rated');`);
+    ]; saveMovies(); goTo('rated');`);
     await settle();
     const ratedCard = doc.querySelector('#items details');
     const ratedShell = ratedCard.closest('.itemShell');
     assert.equal(ratedCard.open, false);
     assert.equal(ratedShell.querySelector('.favoriteToggle').closest('details'), null);
     ratedShell.querySelector('.favoriteToggle').click();
+    await settle();
     assert.equal(ratedCard.open, false);
     assert.equal(ratedShell.querySelector('.favoriteToggle').classList.contains('favOn'), true);
     ratedCard.querySelector('summary').click();
@@ -131,7 +147,7 @@ async function test() {
     doc.querySelector('#items [title="Поставить оценку"]').click();
     await settle();
     assert.equal(window.location.pathname, '/evaluate');
-    assert.equal(doc.querySelector('#addBtn').textContent, 'Сохранить оценку');
+    assert.equal(doc.querySelector('.evaluateReact button[type=submit]').textContent, 'Сохранить оценку');
     const editedId = run('editingMovieId');
     const nameInput = doc.getElementById('evaluate-name');
     Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(nameInput, 'Оценка через React');
@@ -227,8 +243,8 @@ async function test() {
     doc.getElementById('rateMovieBtn').click();
     await settle();
     assert.equal(window.location.pathname, '/evaluate');
-    assert.equal(doc.getElementById('movieName').value, 'React фильм');
-    assert.equal(doc.getElementById('director').value, 'Режиссёр');
+    assert.equal(doc.getElementById('evaluate-name').value, 'React фильм');
+    assert.equal(doc.getElementById('evaluate-director').value, 'Режиссёр');
     run("goTo('movie', { tmdbId: 101, type: 'movie' });");
     await settle(); await settle();
     doc.getElementById('movieAddWishBtn').click();
