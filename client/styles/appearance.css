@@ -1,0 +1,63 @@
+/* Layered neutral surfaces with a restrained action accent. */
+body.theme-bw {
+  --bg: #080808;
+  --bg2: #141414;
+  --card: #141414;
+  --card2: #1d1d1d;
+  --border: #2c2c2c;
+  --line: #2c2c2c;
+  --text: #f4f4f4;
+  --muted: #b1b1b1;
+  --muted2: #898989;
+  --accent: #e53945;
+  --ring: 0 0 0 3px rgba(229,57,69,.22);
+  background: #080808 !important;
+}
+body.theme-bw .topbar { background: rgba(13,13,13,.96); border-bottom-color: #282828; box-shadow: 0 6px 24px rgba(0,0,0,.2); }
+body.theme-bw .card,
+body.theme-bw .homeDashCard,
+body.theme-bw .settingsGroup,
+body.theme-bw details.item {
+  background: #141414;
+  border: 1px solid #2c2c2c;
+  box-shadow: 0 8px 24px rgba(0,0,0,.18);
+}
+body.theme-bw .card:hover { transform: none; border-color: #3b3b3b; }
+body.theme-bw .homeDashCard { padding: 20px; }
+body.theme-bw .homeDashboard { gap: 16px; }
+body.theme-bw .profileSection,
+body.theme-bw .profileFold,
+body.theme-bw .seasonBlock {
+  background: #1b1b1b;
+  border: 1px solid #303030;
+  border-radius: 14px;
+  padding: 16px;
+}
+body.theme-bw .settingsGroup { margin-bottom: 20px; }
+body.theme-bw .settingsRow + .settingsRow { border-top: 1px solid #2c2c2c; }
+body.theme-bw input:not([type=checkbox]):not([type=range]):not([type=file]),
+body.theme-bw textarea,
+body.theme-bw select {
+  background: #202020;
+  border-color: #3b3b3b;
+  color: #f4f4f4;
+}
+body.theme-bw button.primary,
+body.theme-bw .primary {
+  background: #c92c38 !important;
+  border-color: #e24752 !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+body.theme-bw button.primary:hover,
+body.theme-bw .primary:hover { background: #de3441 !important; box-shadow: 0 4px 16px rgba(201,44,56,.18) !important; }
+body.theme-bw .navBtn.active { color: #fff; }
+body.theme-bw .navBtn.active::after { background: #e53945; height: 3px; }
+body.theme-bw :is(button,input,textarea,select,a):focus-visible { outline: 2px solid #f16a73; outline-offset: 3px; }
+@media (max-width: 600px) {
+  body.theme-bw .homeDashCard { padding: 14px; }
+  body.theme-bw .homeDashboard { gap: 12px; }
+  body.theme-bw .profileSection,
+  body.theme-bw .profileFold,
+  body.theme-bw .seasonBlock { padding: 12px; }
+}

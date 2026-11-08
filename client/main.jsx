@@ -8,6 +8,7 @@ import { ProfilePage, SettingsPage, Topbar, NowPage } from './components/PageShe
 import { RouterBrand, RouterNavigation } from './components/Navigation.jsx';
 import { HomePage, ConnectedDashboard, ConnectedRecent } from './components/Home.jsx';
 import './styles/components.css';
+import './styles/appearance.css';
 import { RoutedSearch, CatalogRoute } from './pages/CatalogRoutes.jsx';
 import { RatedRoute, WishRoute } from './pages/LibraryRoutes.jsx';
 import { createLibraryActions } from './state/libraryActions.js';
