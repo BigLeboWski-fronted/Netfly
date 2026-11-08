@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
 import { Register } from './Register.jsx';
 import { PasswordRecovery } from './PasswordRecovery.jsx';
+import { accountRequest } from '../api/account.js';
+import { authenticateAccount } from '../state/accountSession.js';
+
+export function ConnectedAuthScreen() {
+  return <AuthScreen request={accountRequest} onSuccess={authenticateAccount} />;
+}
 
 export function AuthScreen({ request, onSuccess }) {
   const [mode,setMode]=useState('login');

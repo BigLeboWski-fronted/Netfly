@@ -5,9 +5,13 @@ import { getProfileSnapshot, subscribeProfile, getProgressSnapshot, subscribePro
 import { computeNowProgress, computeStreak, sumMinutesLast7Days } from '../state/seriesSelectors.js';
 import { profileData } from '../state/profileSelectors.js';
 import { getTopGenres } from '../state/genres.js';
+import { saveProfile } from '../state/profile.js';
+import { toast } from '../components/Toasts.jsx';
+import { formatMinutes } from '../state/format.js';
 import { ProfileTiles, ProfileScores, ProfileDeepStats, ProfileGenres, ProfileMovieList, ProfileFavorite, ProfileTagline, ProfileWeek } from './Profile.jsx';
 
-export function ProfileAnalytics({ router, onPatch, toast, formatMinutes }) {
+export function ProfileAnalytics({ router }) {
+  const onPatch = patch => saveProfile({ ...getProfileSnapshot(), ...patch });
   const movies=useSyncExternalStore(subscribeLibrary,loadLibrary);
   const profile=useSyncExternalStore(subscribeProfile,getProfileSnapshot);
   const progressState=useSyncExternalStore(subscribeProgress,getProgressSnapshot);

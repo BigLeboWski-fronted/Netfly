@@ -1,4 +1,13 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { getProfileSnapshot, saveProfile } from '../state/profile.js';
+import { toast } from './Toasts.jsx';
+
+export function ConnectedAvatarEditor() {
+  return <AvatarEditor onSave={avatar => {
+    saveProfile({ ...getProfileSnapshot(), avatar });
+    toast('Аватар обновлён');
+  }} />;
+}
 
 export function AvatarEditor({ onSave }) {
   const [source, setSource] = useState(null);

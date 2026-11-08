@@ -1,9 +1,6 @@
 // Shared library state boundary.
 //
-// The legacy application still owns the in-memory array for now, but all
-// persistence goes through this module. React and the remaining legacy views
-// can therefore subscribe to one storage contract while the migration is
-// completed incrementally.
+// React subscribers and persistence use the same in-memory snapshot.
 
 export const LIBRARY_STORAGE_KEY = 'netfly_movies_v6';
 
@@ -84,19 +81,4 @@ export function toggleMovieFavorite(id, storage = globalThis.localStorage) {
 export function subscribeLibrary(listener) {
   listeners.add(listener);
   return () => listeners.delete(listener);
-}
-
-export function installLibraryBridge(target = globalThis) {
-  currentMovies = loadLibrary(target.localStorage);
-  target.NetflyLibrary = {
-    key: LIBRARY_STORAGE_KEY,
-    load: () => loadLibrary(target.localStorage),
-    save: movies => saveLibrary(movies, target.localStorage),
-    add: movie => addMovie(movie, target.localStorage),
-    replace: nextOrUpdater => replaceLibrary(nextOrUpdater, target.localStorage),
-    update: (id, update) => updateMovie(id, update, target.localStorage),
-    remove: id => removeMovie(id, target.localStorage),
-    toggleFavorite: id => toggleMovieFavorite(id, target.localStorage),
-    subscribe: subscribeLibrary,
-  };
 }

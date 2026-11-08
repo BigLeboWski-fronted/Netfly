@@ -1,7 +1,18 @@
 import { loadLibrary, updateMovie, replaceLibrary, toggleMovieFavorite, removeMovie } from './library.js';
+import { request } from '../api/tmdb.js';
 
 const kindOf = movie => ['series','tv-series'].includes(movie.omdb?.type) ? 'series' : 'movie';
-export function createLibraryActions({ router, toast, onRate, onOpenPerson, confirm, confirmQueue, confirmRated }) {
+export function createLibraryActions({ router, toast, onRate, confirm }) {
+  async function onOpenPerson(name) {
+    try {
+      const data = await request('/api/tmdb/search?query=' + encodeURIComponent(name));
+      const person = (data.results || []).find(item => item.media_type === 'person');
+      if (!person) throw new Error('not found');
+      router.navigate('person', { personId: person.id });
+    } catch { toast('Профиль не найден', name); }
+  }
+  const confirmQueue = kind => confirm({ title: 'Очистить очередь?', message: kind === 'series' ? 'Удалить все сериалы из очереди?' : 'Удалить все фильмы из очереди?', hint: 'Это действие нельзя отменить.', confirmLabel: 'Очистить' });
+  const confirmRated = () => confirm({ title: 'Очистить оценённые?', hint: 'Все оценки будут удалены. Это действие нельзя отменить.', confirmLabel: 'Очистить' });
   async function onDelete(id, element) {
     const movie=loadLibrary().find(item=>item.id===id);
     if(!movie || !await confirm({ title:'Удалить фильм?', message:movie.name, hint:'Фильм и его оценка будут удалены из библиотеки. Это действие нельзя отменить.' })) return;

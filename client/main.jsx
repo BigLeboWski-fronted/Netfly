@@ -10,33 +10,31 @@ import { HomePage, ConnectedDashboard, ConnectedRecent } from './components/Home
 import './styles/components.css';
 import { RoutedSearch, CatalogRoute } from './pages/CatalogRoutes.jsx';
 import { RatedRoute, WishRoute } from './pages/LibraryRoutes.jsx';
-import { request } from './api/tmdb.js';
-import { accountRequest } from './api/account.js';
-import { createSync } from './state/sync.js';
-import { createAccountDataLoader } from './state/accountData.js';
-import { createSeriesLoader } from './state/seriesLoader.js';
-import { createOmdbSearch } from './state/omdbSearch.js';
 import { createLibraryActions } from './state/libraryActions.js';
-import { createEvaluationDraft, saveEvaluation, fromTmdb, fromOmdb, queueEvaluation } from './state/evaluation.js';
 import { createRouter } from './state/router.js';
 import * as profileStorage from './state/profile.js';
-import * as session from './state/session.js';
-import { profileData } from './state/profileSelectors.js';
-import { getTopGenres } from './state/genres.js';
-import * as seriesSelectors from './state/seriesSelectors.js';
-import * as activeSeries from './state/activeSeries.js';
-import { Evaluate } from './pages/Evaluate.jsx';
-import { AuthScreen } from './pages/Auth.jsx';
-import { Settings } from './pages/Settings.jsx';
-import { AccountUsername, AccountCredentials } from './pages/Account.jsx';
-import { AvatarEditor } from './components/AvatarEditor.jsx';
+import { ConnectedEvaluate } from './pages/ConnectedEvaluate.jsx';
+import { ConnectedAuthScreen } from './pages/Auth.jsx';
+import { ConnectedSettings } from './pages/Settings.jsx';
+import { loadAppearance, applyAppearance } from './state/appearance.js';
+import { ConnectedAvatarEditor } from './components/AvatarEditor.jsx';
 import { flushSync } from 'react-dom';
-import { installLibraryBridge } from './state/library.js';
+import * as library from './state/library.js';
+import { formatMinutes } from './state/format.js';
+import { configureRatingNavigation, requestMovieRating, configureCatalogRating, requestCatalogRating } from './state/ratingNavigation.js';
+import { createEvaluationController } from './state/evaluationController.js';
+import { createAppRuntime } from './state/appRuntime.js';
+import { toast } from './components/Toasts.jsx';
 
 const views = new Map();
 const appHost = document.getElementById('appReactRoot');
 const appRoot = createRoot(appHost);
 const router = createRouter(window);
+const evaluationController = createEvaluationController(router);
+const appRuntime = createAppRuntime({ router, evaluation: evaluationController });
+configureRatingNavigation(evaluationController.rate);
+configureCatalogRating(evaluationController.catalog);
+applyAppearance(loadAppearance());
 let confirmationQueue = Promise.resolve();
 function confirmAction(props) {
   const result = confirmationQueue.then(() => new Promise(resolve => {
@@ -45,7 +43,6 @@ function confirmAction(props) {
   confirmationQueue = result.catch(() => false);
   return result;
 }
-installLibraryBridge(window);
 function render(id, content) {
   const host = document.getElementById(id);
   if (!host) throw new Error(`React mount point missing: ${id}`);
@@ -54,47 +51,15 @@ function render(id, content) {
   appRoot.render(<App views={new Map(views)} router={router} />);
 }
 
-window.NetflyUI = {
-  connectedSeries(props) { render('connectedSeriesRoot', <ConnectedSeries {...props} router={router} />); },
-  createAccountDataLoader,
-  accountRequest,
-  session,
-  profileAnalytics(props) { render('profileAnalyticsRoot', <ProfileAnalytics {...props} router={router} />); },
-  topGenres: getTopGenres,
-  profileData,
-  activeSeries,
-  createSeriesLoader,
-  seriesSelectors,
-  createOmdbSearch,
-  evaluation: { fromTmdb, fromOmdb, queueEvaluation },
-  saveEvaluation,
-  confirm: confirmAction,
-  libraryPages(dependencies) {
-    const actions = createLibraryActions({ ...dependencies, router, confirm: confirmAction });
-    render('ratedRoot', <RatedRoute {...actions.rated} router={router} />);
-    render('wishRoot', <WishRoute {...actions.wish} router={router} />);
-  },
-  catalogActions(onAction) { render('moviePageContent', <CatalogRoute router={router} onAction={onAction} />); },
-  createEvaluationDraft,
-  router,
-  profileStorage,
-  createSync,
-  evaluate(props) { render('evaluateReactRoot', <Evaluate {...props} />); },
-  auth(props) { render('authScreen', <AuthScreen {...props} />); },
-  settings(props) { render('settingsReactRoot', <Settings {...props} />); },
-  accountCredentials(props) { render('accountReactRoot', props ? <AccountCredentials key={props.mode} {...props} /> : null); },
-  accountUsername(props) { render('accountReactRoot', props ? <AccountUsername {...props} /> : null); },
-  avatarEditor(props) { render('avatarEditorRoot', <AvatarEditor {...props} />); },
-  request,
-  home(props) { render('homeDashboard', <ConnectedDashboard {...props} router={router} />); render('recentWrap', <ConnectedRecent router={router} />); },
-};
+// Explicitly enabled only by the isolated integration harness.
+if (window.__NETFLY_TEST__) window.__netflyTest = { library, profileStorage, evaluationController, router };
 
-// Mount page-owned hosts before the temporary inline controller reads them.
+// Create page shells before mounting their nested portals.
 flushSync(() => {
   render('view-home', <HomePage />);
   render('view-profile', <ProfilePage />);
   render('view-settings', <SettingsPage />);
-  render('topbarReactRoot', <Topbar />);
+  render('topbarReactRoot', <Topbar router={router} />);
   render('nowPageReactRoot', <NowPage />);
 });
 flushSync(() => {
@@ -102,4 +67,22 @@ flushSync(() => {
   render('nav', <RouterNavigation router={router} />);
   render('mobileNav', <RouterNavigation router={router} />);
   render('searchRoot', <RoutedSearch router={router} />);
+  render('settingsReactRoot', <ConnectedSettings />);
+  render('avatarEditorRoot', <ConnectedAvatarEditor />);
+  render('homeDashboard', <ConnectedDashboard router={router} />);
+  render('recentWrap', <ConnectedRecent router={router} />);
+  render('profileAnalyticsRoot', <ProfileAnalytics router={router} />);
+  render('authScreen', <ConnectedAuthScreen />);
+  render('evaluateReactRoot', <ConnectedEvaluate />);
+  render('moviePageContent', <CatalogRoute router={router} onAction={requestCatalogRating} />);
+  const libraryActions = createLibraryActions({ router, toast, onRate: requestMovieRating, confirm: confirmAction });
+  render('ratedRoot', <RatedRoute {...libraryActions.rated} router={router} />);
+  render('wishRoot', <WishRoute {...libraryActions.wish} router={router} />);
+  render('connectedSeriesRoot', <ConnectedSeries {...appRuntime.series} formatMinutes={formatMinutes} router={router} />);
 });
+appRuntime.account.restore();
+router.restore();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}

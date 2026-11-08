@@ -31,7 +31,9 @@ async function test() {
         : url === '/api/data' ? {}
         : { genres: [], results: [], total_pages: 1 },
     });
+    window.__NETFLY_TEST__ = true;
     run(fs.readFileSync('public/assets/ui.js', 'utf8'));
+    run(fs.readFileSync('scripts/test-compatibility.js', 'utf8'));
     for (const script of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)) {
       if (script[1].trim()) run(script[1]);
     }
@@ -47,7 +49,7 @@ async function test() {
     run(`movies = [{
       id: 'fixture', name: 'Тестовый фильм', status: 'watched',
       createdAt: Date.now(), scores: { overall: 9, engage: 9, emotions: 9 }
-    }]; saveMovies(); renderHome();`);
+    }]; saveMovies();`);
     await settle();
     assert.match(doc.querySelector('#recentWrap').textContent, /Тестовый фильм/);
     assert.match(doc.querySelector('#recentWrap .scoreBadge').textContent, /9/);
@@ -69,11 +71,11 @@ async function test() {
     assert.equal(window.location.pathname, '/');
     assert.equal(doc.querySelector('#nav [aria-current]').textContent, 'Главная');
 
-    for (let i = 0; i < 5; i++) run('renderHome();');
+    for (let i = 0; i < 5; i++) run('saveMovies();');
     await settle();
     assert.equal(doc.querySelectorAll('#nav button').length, 5);
     assert.equal(doc.querySelectorAll('#recentWrap button').length, 1);
-    run('movies = []; saveMovies(); renderHome();');
+    run('movies = []; saveMovies();');
     await settle();
     assert.equal(doc.querySelectorAll('#recentWrap button').length, 0);
     assert.match(doc.querySelector('#recentWrap').textContent, /Пока нет/);
@@ -99,7 +101,7 @@ async function test() {
         totalEpisodes: 2, seasons: { '1': [
           { Episode: '1', Title: 'Первая' }, { Episode: '2', Title: 'Вторая' }
         ] }
-      }; saveEpCache(); saveNowState();`);
+      }; window.__netflyTest.profileStorage.saveEpisodeCache(omdbEpCache); saveNowState();`);
     await settle();
     assert.match(doc.querySelector('#nowWidgetHome').textContent, /Тестовый сериал/);
     doc.querySelector('#nowWidgetHome .primary').click();
@@ -148,7 +150,7 @@ async function test() {
     await settle();
     assert.equal(window.location.pathname, '/evaluate');
     assert.equal(doc.querySelector('.evaluateReact button[type=submit]').textContent, 'Сохранить оценку');
-    const editedId = run('editingMovieId');
+    const editedId = run('evaluationState.editingId');
     const nameInput = doc.getElementById('evaluate-name');
     Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(nameInput, 'Оценка через React');
     nameInput.dispatchEvent(new window.Event('input', { bubbles: true }));

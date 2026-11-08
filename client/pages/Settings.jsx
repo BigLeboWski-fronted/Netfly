@@ -1,4 +1,29 @@
 import React, { useState } from 'react';
+import { loadAppearance, saveAppearance } from '../state/appearance.js';
+import { toast } from '../components/Toasts.jsx';
+import { createPortal } from 'react-dom';
+import { AccountUsername, AccountCredentials } from './Account.jsx';
+import { accountRequest } from '../api/account.js';
+import { setUser } from '../state/session.js';
+
+export function ConnectedSettings() {
+  const [accountMode, setAccountMode] = useState(null);
+  const [appearance, setAppearance] = useState(loadAppearance);
+  const update = patch => {
+    const next = { ...appearance, ...patch };
+    saveAppearance(next);
+    setAppearance(next);
+  };
+  const close = () => setAccountMode(null);
+  return <><Settings theme={appearance.theme} cinemaNight={appearance.cinemaNight} onAccount={setAccountMode}
+    onTheme={theme => { update({ theme }); toast('Тема изменена'); }}
+    onNight={cinemaNight => { update({ cinemaNight }); toast(cinemaNight ? 'Киноночь включена' : 'Киноночь выключена'); }} />
+    {accountMode && createPortal(accountMode === 'username'
+      ? <AccountUsername request={accountRequest} onClose={close} onSuccess={username => { setUser(username); toast('Имя изменено', username); }} />
+      : <AccountCredentials key={accountMode} mode={accountMode} request={accountRequest} onClose={close} onSuccess={() => toast(accountMode === 'email' ? 'Email изменён' : 'Пароль изменён')} />,
+      document.getElementById('accountReactRoot'))}
+  </>;
+}
 
 export function Settings({ theme: initialTheme, cinemaNight: initialNight, onTheme, onNight, onAccount }) {
   const [theme, setTheme] = useState(initialTheme);

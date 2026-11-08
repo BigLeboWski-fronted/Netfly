@@ -4,6 +4,19 @@ export function createEvaluationDraft() {
   return { name: '', director: '', year: '', status: 'watched', tags: '', notes: '' };
 }
 
+export function evaluationFromMovie(movie) {
+  return {
+    editingId: movie.id,
+    draft: {
+      name: movie.name || '', director: movie.director || '', year: movie.year ?? '',
+      status: movie.status && movie.status !== 'wish' ? movie.status : 'watched',
+      tags: Array.isArray(movie.tags) ? movie.tags.join(', ') : '', notes: movie.notes || '',
+    },
+    metadata: movie.omdb ? { ...movie.omdb } : null,
+    scores: Object.fromEntries(['overall', 'engage', 'emotions'].map(key => [key, Math.max(0, Math.min(10, Number(movie.scores?.[key]) || 0))])),
+  };
+}
+
 export function fromTmdb(movie, type) {
   const name=movie.title || movie.name || 'Без названия';
   const runtime=movie.runtime || movie.episode_run_time?.[0];

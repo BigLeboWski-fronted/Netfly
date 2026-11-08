@@ -1,6 +1,8 @@
 import React, { createContext, useLayoutEffect, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { getSessionSnapshot, subscribeSession } from './state/session.js';
+import { Toasts } from './components/Toasts.jsx';
+import { Confetti } from './components/Confetti.jsx';
 
 // All migrated views share one React tree. Portals keep existing page hosts
 // available until the remaining HTML shell is migrated.
@@ -25,7 +27,7 @@ export function App({ views, router }) {
   const session=useSyncExternalStore(subscribeSession,getSessionSnapshot);
   useLayoutEffect(()=>{document.getElementById('authScreen')?.classList.toggle('hidden',!!session.user);},[session.user]);
   const route = useSyncExternalStore(router.subscribe, router.getSnapshot);
-  return <RouteContext.Provider value={route}><PageVisibility route={route} />{Array.from(views, ([id, { host, content }]) =>
+  return <RouteContext.Provider value={route}><Toasts /><Confetti /><PageVisibility route={route} />{Array.from(views, ([id, { host, content }]) =>
     createPortal(content, host, id)
   )}</RouteContext.Provider>;
 }

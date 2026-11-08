@@ -2,9 +2,12 @@ import React, { useSyncExternalStore } from 'react';
 import { loadLibrary, subscribeLibrary } from '../state/library.js';
 import { dashboardData, recentMovies } from '../state/home.js';
 import { Poster } from './Poster.jsx';
+import { subscribeProfile, getProfileSnapshot, subscribeProgress, getProgressSnapshot } from '../state/profile.js';
 
-export function ConnectedDashboard({ profile, nowState, router }) {
+export function ConnectedDashboard({ router }) {
   const movies=useSyncExternalStore(subscribeLibrary,loadLibrary);
+  const profile=useSyncExternalStore(subscribeProfile,getProfileSnapshot);
+  const nowState=useSyncExternalStore(subscribeProgress,getProgressSnapshot);
   return <HomeDashboard {...dashboardData(movies,profile,nowState)} onNavigate={router.navigate} />;
 }
 export function ConnectedRecent({ router }) {
