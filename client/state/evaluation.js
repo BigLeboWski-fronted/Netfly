@@ -1,4 +1,6 @@
 import { loadLibrary, addMovie, updateMovie } from './library.js';
+import { omdbRequest } from '../api/omdb.js';
+import { createOmdbSearch } from './omdbSearch.js';
 
 export function createEvaluationDraft() {
   return { name: '', director: '', year: '', status: 'watched', tags: '', notes: '' };
@@ -54,4 +56,110 @@ export function saveEvaluation({ draft, scores, metadata, editingId }) {
   const movie = { ...patch, id:crypto.randomUUID(), createdAt:Date.now(), favorite:false, omdb:metadata ? {...metadata} : null };
   addMovie(movie);
   return {movie,edited:false};
+}
+
+export function createEvaluationActions({ getDraft, onReset, onChanged, toast, navigate, onInvalid }) {
+  function save() {
+    let result;
+    try { result = saveEvaluation(getDraft()); }
+    catch (error) { toast(error.message); onInvalid?.(); return; }
+    const { movie, edited } = result;
+    toast(edited ? 'Оценка сохранена' : movie.status === 'wish' ? 'Добавлено в очередь' : 'Добавлено в оценённые', movie.name);
+    onReset();
+    onChanged();
+    navigate(movie.status === 'wish' ? 'wish' : 'rated', { openId: movie.id });
+    return movie;
+  }
+  function queue() {
+    let movie;
+    try {
+      const { draft, metadata } = getDraft();
+      movie = queueEvaluation(draft, metadata);
+    } catch (error) { toast(error.message); return; }
+    toast('Добавлено в очередь', movie.name);
+    onChanged();
+    navigate('wish', { openId: movie.id });
+    return movie;
+  }
+  return { save, queue };
+}
+
+export function createEvaluationSearch({ onResults, onStatus, onSelected }) {
+  let generation = 0;
+  const search = createOmdbSearch({ request: omdbRequest, onResults, onStatus });
+  async function select(id) {
+    search.cancel();
+    const version = ++generation;
+    onStatus('Загружаю детали…');
+    try {
+      const data = await omdbRequest({ i: id, plot: 'short' });
+      if (version !== generation) return;
+      if (data.Response === 'False') {
+        onStatus(data.Error || 'Не удалось получить детали.', true);
+        return;
+      }
+      onSelected(fromOmdb(data));
+      onStatus('Готово: данные подставлены. Теперь поставь оценки и нажми “Добавить”.');
+    } catch {
+      if (version === generation) onStatus('Ошибка при загрузке деталей из OMDb.', true);
+    }
+  }
+  function cancel() { generation++; search.cancel(); }
+  return {
+    select,
+    cancel,
+    search(query) { generation++; return search.search(query); },
+    schedule(query) { generation++; search.schedule(query); },
+  };
+}
+
+let evaluationView = null;
+const evaluationListeners = new Set();
+
+export function getEvaluationView() { return evaluationView; }
+export function subscribeEvaluationView(listener) {
+  evaluationListeners.add(listener);
+  return () => evaluationListeners.delete(listener);
+}
+export function publishEvaluationView(next) {
+  evaluationView = next;
+  evaluationListeners.forEach(listener => listener());
+}
+export function createEvaluationState() {
+  return {
+    draft: createEvaluationDraft(),
+    scores: { overall: 0, engage: 0, emotions: 0 },
+    metadata: null, editingId: null, results: [], revision: 0, message: '',
+  };
+}
+export function resetEvaluationState(state) {
+  const revision = state.revision;
+  Object.assign(state, createEvaluationState(), { revision });
+}
+export function prepareEvaluation(state, selection) {
+  resetEvaluationState(state);
+  Object.assign(state.draft, selection.draft);
+  state.metadata = selection.metadata;
+  state.editingId = selection.editingId || null;
+  if (selection.scores) Object.assign(state.scores, selection.scores);
+  state.message = state.editingId ? 'Редактирование оценки' : '';
+}
+export function prepareCatalogEvaluation(state, movie, type) {
+  prepareEvaluation(state, fromTmdb(movie, type));
+}
+export function prepareMovieEvaluation(state, movie) {
+  prepareEvaluation(state, evaluationFromMovie(movie));
+}
+
+let openRating;
+let applyCatalogMovie;
+export function configureRatingNavigation(action) { openRating = action; }
+export function configureCatalogRating(action) { applyCatalogMovie = action; }
+export function requestCatalogRating(movie, type, action) {
+  if (!applyCatalogMovie) throw new Error('Форма оценки ещё загружается');
+  return applyCatalogMovie(movie, type, action);
+}
+export function requestMovieRating(movie) {
+  if (!openRating) throw new Error('Форма оценки ещё загружается');
+  return openRating(movie);
 }

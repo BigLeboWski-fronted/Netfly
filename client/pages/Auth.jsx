@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Register } from './Register.jsx';
 import { PasswordRecovery } from './PasswordRecovery.jsx';
 import { accountRequest } from '../api/account.js';
-import { authenticateAccount } from '../state/accountSession.js';
+import { authenticateAccount } from '../state/accountSync.js';
 
 export function ConnectedAuthScreen() {
   return <AuthScreen request={accountRequest} onSuccess={authenticateAccount} />;

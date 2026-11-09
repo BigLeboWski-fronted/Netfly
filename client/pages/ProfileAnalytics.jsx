@@ -3,11 +3,11 @@ import { createPortal } from 'react-dom';
 import { loadLibrary, subscribeLibrary } from '../state/library.js';
 import { getProfileSnapshot, subscribeProfile, getProgressSnapshot, subscribeProgress, getEpisodeCache, subscribeEpisodeCache } from '../state/profile.js';
 import { computeNowProgress, computeStreak, sumMinutesLast7Days } from '../state/seriesSelectors.js';
-import { profileData } from '../state/profileSelectors.js';
+import { profileData } from '../state/profile.js';
 import { getTopGenres } from '../state/genres.js';
 import { saveProfile } from '../state/profile.js';
 import { toast } from '../components/Toasts.jsx';
-import { formatMinutes } from '../state/format.js';
+import { formatMinutes } from '../state/utils.js';
 import { ProfileTiles, ProfileScores, ProfileDeepStats, ProfileGenres, ProfileMovieList, ProfileFavorite, ProfileTagline, ProfileWeek } from './Profile.jsx';
 
 export function ProfileAnalytics({ router }) {

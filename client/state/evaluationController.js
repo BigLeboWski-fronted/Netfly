@@ -1,6 +1,4 @@
-import { createEvaluationState, publishEvaluationView, resetEvaluationState, prepareMovieEvaluation, prepareCatalogEvaluation, prepareEvaluation } from './evaluationState.js';
-import { createEvaluationSearch } from './evaluationSearch.js';
-import { createEvaluationActions } from './evaluationActions.js';
+import { createEvaluationState, publishEvaluationView, resetEvaluationState, prepareMovieEvaluation, prepareCatalogEvaluation, prepareEvaluation, createEvaluationActions, createEvaluationSearch } from './evaluation.js';
 import { toast } from '../components/Toasts.jsx';
 
 export function createEvaluationController(router) {
