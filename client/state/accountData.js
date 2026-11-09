@@ -19,7 +19,7 @@ export function createAccountDataLoader({ request, onApplying, onLoaded, onPendi
       if(data.now_state && Object.keys(data.now_state).length){ nowState=updateProgress(nowState,data.now_state); saveNowState(nowState,storage); }
       let cache=getEpisodeCache();
       if(data.omdb_ep_cache && Object.keys(data.omdb_ep_cache).length){ cache={...cache,...data.omdb_ep_cache}; saveEpisodeCache(cache); }
-      const snapshot={movies,profile,nowState,cache};
+      const snapshot={movies,profile,nowState,cache,updatedAt:data.updated_at || null};
       onLoaded(snapshot);
       if(pending) onPending();
       return snapshot;

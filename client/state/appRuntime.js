@@ -12,11 +12,13 @@ import { toast } from '../components/Toasts.jsx';
 import { launchConfetti } from '../components/Confetti.jsx';
 
 export function createAppRuntime({ router, evaluation }) {
+  let updatedAt = null;
   const sync = createAccountSync({
     request: accountRequest, getSession: session.getSessionSnapshot,
-    getSnapshot: () => ({ movies: loadLibrary(), profile: storage.getProfileSnapshot(), now_state: storage.getProgressSnapshot(), omdb_ep_cache: storage.getEpisodeCache() }),
-    onLoaded: () => {}, onStatus: session.setSyncStatus,
-    onSaved: snapshot => {
+    getSnapshot: () => ({ movies: loadLibrary(), profile: storage.getProfileSnapshot(), now_state: storage.getProgressSnapshot(), omdb_ep_cache: storage.getEpisodeCache(), updated_at: updatedAt }),
+    onLoaded: snapshot => { updatedAt = snapshot.updatedAt || null; }, onStatus: session.setSyncStatus,
+    onSaved: (snapshot, result) => {
+      updatedAt = result?.updated_at || updatedAt;
       if (JSON.stringify(loadLibrary()) === JSON.stringify(snapshot.movies)) localStorage.removeItem('netfly_library_pending');
     },
   });

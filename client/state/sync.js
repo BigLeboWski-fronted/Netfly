@@ -12,9 +12,9 @@ export function createSync({ request, getSnapshot, isAuthenticated, onStatus, on
     onStatus('syncing');
     running = (async () => {
       try {
-        await request('/api/data', { method: 'PUT', body: snapshot });
+        const result = await request('/api/data', { method: 'PUT', body: snapshot });
         onStatus('ok');
-        onSaved?.(JSON.parse(snapshot));
+        onSaved?.(JSON.parse(snapshot), result);
       } catch (error) {
         onStatus('err');
         console.warn('syncToServer:', error.message);

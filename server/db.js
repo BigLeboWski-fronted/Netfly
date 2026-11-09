@@ -62,16 +62,44 @@ async function migrate() {
     CREATE INDEX IF NOT EXISTS idx_verification_codes_created_at ON verification_codes(created_at);
   `);
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS rate_limit_buckets (
+      bucket_key TEXT PRIMARY KEY,
+      count INTEGER NOT NULL,
+      reset_at TIMESTAMPTZ NOT NULL
+    );
+  `);
+
   // Safe migrations for existing tables
   await pool.query(`
     ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS verified BOOLEAN NOT NULL DEFAULT FALSE;
   `);
   // Fill email from username for old rows, then make unique+not null
-  await pool.query(`UPDATE users SET email = username WHERE email IS NULL;`);
+  await pool.query(`
+    UPDATE users
+       SET email = LOWER(BTRIM(COALESCE(email, username)))
+     WHERE email IS NULL OR email <> LOWER(BTRIM(email));
+  `);
   await pool.query(`
     ALTER TABLE users ALTER COLUMN email SET NOT NULL;
   `).catch(() => {});
+
+  // Existing installations may have an email column without a uniqueness rule.
+  // Fail with a useful message instead of creating an ambiguous login state.
+  const duplicateEmails = await pool.query(`
+    SELECT email
+      FROM users
+     GROUP BY email
+    HAVING COUNT(*) > 1
+     LIMIT 1;
+  `);
+  if (duplicateEmails.rows.length) {
+    throw new Error(`Duplicate email prevents migration: ${duplicateEmails.rows[0].email}`);
+  }
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_unique ON users(email);
+  `);
 }
 
 module.exports = { pool, migrate };

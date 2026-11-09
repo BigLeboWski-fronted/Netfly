@@ -82,19 +82,47 @@ const externalApiBuckets = new Map();
 const authBuckets = new Map();
 
 function authRateLimit(name, max, windowMs) {
-  return (req, res, next) => {
+  return async (req, res, next) => {
     const identifier = String(req.body?.email || req.body?.username || "").trim().toLowerCase();
-    const key = `${name}:${req.ip}:${identifier}`;
+    const keys = [`${name}:ip:${req.ip}`];
+    if (identifier) keys.push(`${name}:identity:${req.ip}:${identifier}`);
     const now = Date.now();
-    const bucket = authBuckets.get(key);
-    if (!bucket || now >= bucket.resetAt) {
-      authBuckets.set(key, { count: 1, resetAt: now + windowMs });
+
+    try {
+      const result = await pool.query(
+        `INSERT INTO rate_limit_buckets (bucket_key, count, reset_at)
+         SELECT bucket_key, 1, NOW() + ($2 * INTERVAL '1 millisecond')
+           FROM unnest($1::text[]) AS bucket_key
+         ON CONFLICT (bucket_key) DO UPDATE SET
+           count = CASE WHEN rate_limit_buckets.reset_at <= NOW() THEN 1 ELSE rate_limit_buckets.count + 1 END,
+           reset_at = CASE WHEN rate_limit_buckets.reset_at <= NOW()
+                           THEN NOW() + ($2 * INTERVAL '1 millisecond')
+                           ELSE rate_limit_buckets.reset_at END
+         RETURNING count`,
+        [keys, windowMs]
+      );
+      if (result.rows.some((row) => row.count > max)) {
+        return res.status(429).json({ error: "Слишком много попыток. Попробуй позже" });
+      }
       return next();
+    } catch (error) {
+      logger.warn("Shared rate limit unavailable, using local fallback", { error: error.message });
     }
-    if (bucket.count >= max) {
+
+    const buckets = keys.map((key) => authBuckets.get(key));
+
+    if (buckets.some((bucket) => bucket && now < bucket.resetAt && bucket.count >= max)) {
       return res.status(429).json({ error: "Слишком много попыток. Попробуй позже" });
     }
-    bucket.count += 1;
+
+    for (const [index, key] of keys.entries()) {
+      const bucket = buckets[index];
+      if (!bucket || now >= bucket.resetAt) {
+        authBuckets.set(key, { count: 1, resetAt: now + windowMs });
+      } else {
+        bucket.count += 1;
+      }
+    }
     next();
   };
 }
@@ -178,6 +206,10 @@ function generateVerificationCode() {
   return String(randomInt(100000, 1000000));
 }
 
+function tooLong(value, max = 200) {
+  return value != null && String(value).length > max;
+}
+
 app.get("/health", (req, res) => res.json({ ok: true }));
 
 // ── Email verification ────────────────────────────────────────────────────────
@@ -236,6 +268,14 @@ app.post("/api/verify-code", async (req, res) => {
     return res.status(400).json({ error: "Заполни все поля" });
 
   try {
+    const duplicate = await pool.query(
+      "SELECT id FROM users WHERE email=$1 OR username=$2 LIMIT 1",
+      [email.trim().toLowerCase(), username.trim()]
+    );
+    if (duplicate.rows.length) {
+      return res.status(409).json({ error: "Email или имя уже заняты" });
+    }
+
     if (!(await consumeVerificationCode(email, code))) {
       return res.status(400).json({ error: "Неверный или истёкший код" });
     }
@@ -297,13 +337,13 @@ app.get("/api/me", requireAuth, async (req, res) => {
 
 app.get("/api/data", requireAuth, async (req, res) => {
   const { rows } = await pool.query("SELECT * FROM user_data WHERE user_id=$1", [req.userId]);
-  if (!rows[0]) return res.json({ movies: [], profile: {}, now_state: {}, omdb_ep_cache: {} });
+  if (!rows[0]) return res.json({ movies: [], profile: {}, now_state: {}, omdb_ep_cache: {}, updated_at: null });
   const r = rows[0];
-  res.json({ movies: r.movies, profile: r.profile, now_state: r.now_state, omdb_ep_cache: r.omdb_ep_cache });
+  res.json({ movies: r.movies, profile: r.profile, now_state: r.now_state, omdb_ep_cache: r.omdb_ep_cache, updated_at: r.updated_at });
 });
 
 app.put("/api/data", requireAuth, async (req, res) => {
-  const { movies, profile, now_state, omdb_ep_cache } = req.body || {};
+  const { movies, profile, now_state, omdb_ep_cache, updated_at } = req.body || {};
   if (!Array.isArray(movies) || movies.length > MAX_MOVIES ||
       !profile || typeof profile !== "object" || Array.isArray(profile) ||
       !now_state || typeof now_state !== "object" || Array.isArray(now_state) ||
@@ -320,20 +360,25 @@ app.put("/api/data", requireAuth, async (req, res) => {
     return res.status(413).json({ error: "Слишком большой объём данных" });
   }
 
-  await pool.query(
+  const result = await pool.query(
     `INSERT INTO user_data (user_id, movies, profile, now_state, omdb_ep_cache, updated_at)
      VALUES ($1,$2,$3,$4,$5,NOW())
      ON CONFLICT (user_id) DO UPDATE SET
-       movies=$2, profile=$3, now_state=$4, omdb_ep_cache=$5, updated_at=NOW()`,
+       movies=$2, profile=$3, now_state=$4, omdb_ep_cache=$5, updated_at=NOW()
+     WHERE $6::timestamptz IS NULL OR user_data.updated_at=$6::timestamptz
+     RETURNING updated_at`,
     [req.userId, JSON.stringify(movies), JSON.stringify(profile),
-     JSON.stringify(now_state), JSON.stringify(omdb_ep_cache)]
+     JSON.stringify(now_state), JSON.stringify(omdb_ep_cache), updated_at || null]
   );
-  res.json({ ok: true });
+  if (!result.rows.length) return res.status(409).json({ error: "Данные изменились на другом устройстве. Обнови страницу" });
+  res.json({ ok: true, updated_at: result.rows[0].updated_at });
 });
 
 // ── OMDB proxy ────────────────────────────────────────────────────────────────
 
 app.get("/api/omdb", requireAuth, externalApiLimit("omdb"), async (req, res) => {
+  if (Object.values(req.query).some((value) => tooLong(value)))
+    return res.status(400).json({ error: "Слишком длинный параметр запроса" });
   try {
     const cacheKey = cache.generateKey('omdb:search', req.query);
     const cached = cache.get(cacheKey);
@@ -346,6 +391,10 @@ app.get("/api/omdb", requireAuth, externalApiLimit("omdb"), async (req, res) => 
     const params = new URLSearchParams({ ...req.query, apikey: process.env.OMDB_API_KEY });
     const r = await fetch(`https://www.omdbapi.com/?${params}`);
     const data = await r.json();
+    if (!r.ok) {
+      logger.warn("OMDB upstream request failed", { status: r.status });
+      return res.status(502).json({ error: "OMDB недоступен" });
+    }
     
     cache.set(cacheKey, data, 60 * 60 * 1000); // 1 час
     logger.info(`OMDB cached: ${JSON.stringify(req.query)}`);
@@ -361,6 +410,7 @@ app.get("/api/omdb", requireAuth, externalApiLimit("omdb"), async (req, res) => 
 app.get("/api/youtube/search", requireAuth, externalApiLimit("youtube"), async (req, res) => {
   const { q } = req.query;
   if (!q) return res.status(400).json({ error: "Query required" });
+  if (tooLong(q)) return res.status(400).json({ error: "Слишком длинный запрос" });
   
   try {
     const cacheKey = cache.generateKey('youtube:search', { q });
@@ -411,6 +461,7 @@ const TMDB_KEY = process.env.TMDB_API_KEY;
 app.get("/api/tmdb/search", requireAuth, externalApiLimit("tmdb"), async (req, res) => {
   const { query, page = 1 } = req.query;
   if (!query) return res.status(400).json({ error: "Query required" });
+  if (tooLong(query)) return res.status(400).json({ error: "Слишком длинный запрос" });
 
   try {
     const cacheKey = cache.generateKey('tmdb:search', { query, page });
@@ -572,6 +623,8 @@ app.get("/api/tmdb/genres", requireAuth, externalApiLimit("tmdb"), async (req, r
 // Pick a random TMDB title using search/discover filters.
 app.get("/api/tmdb/random", requireAuth, externalApiLimit("tmdb", 20), async (req, res) => {
   const { type = "movie", genre, year, sort = "popularity.desc", director, actor } = req.query;
+  if ([genre, year, sort, director, actor].some((value) => tooLong(value, 100)))
+    return res.status(400).json({ error: "Слишком длинный параметр фильтра" });
   try {
     const endpoint = type === "tv" ? "discover/tv" : "discover/movie";
     const params = new URLSearchParams({ api_key: TMDB_KEY, language: "ru-RU", sort_by: sort, page: String(Math.floor(Math.random() * 3) + 1), "vote_count.gte": "50" });
@@ -800,6 +853,13 @@ app.post("/api/account/change-email", requireAuth, async (req, res) => {
       "SELECT email FROM users WHERE id=$1", [req.userId]
     );
     const currentEmail = userRows[0]?.email;
+    const duplicate = await pool.query(
+      "SELECT id FROM users WHERE email=$1 AND id<>$2 LIMIT 1",
+      [newEmail.trim().toLowerCase(), req.userId]
+    );
+    if (duplicate.rows.length) {
+      return res.status(409).json({ error: "Email уже занят" });
+    }
 
     if (!(await consumeVerificationCode(currentEmail, code))) {
       return res.status(400).json({ error: "Неверный или истёкший код" });
