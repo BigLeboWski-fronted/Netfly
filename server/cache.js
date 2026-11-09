@@ -4,6 +4,7 @@ class Cache {
   constructor() {
     this.store = new Map();
     this.defaultTTL = 60 * 60 * 1000; // 1 час в миллисекундах
+    this.maxEntries = 5000;
   }
 
   // Генерация ключа для кэша
@@ -27,6 +28,9 @@ class Cache {
       return null;
     }
 
+    // Refresh insertion order so the least recently used entries are evicted first.
+    this.store.delete(key);
+    this.store.set(key, item);
     logger.debug(`Cache hit for key: ${key}`);
     return item.value;
   }
@@ -34,6 +38,12 @@ class Cache {
   // Сохранение значения в кэш
   set(key, value, ttl = this.defaultTTL) {
     const expiresAt = Date.now() + ttl;
+    this.store.delete(key);
+    while (this.store.size >= this.maxEntries) {
+      const oldestKey = this.store.keys().next().value;
+      if (oldestKey === undefined) break;
+      this.store.delete(oldestKey);
+    }
     this.store.set(key, { value, expiresAt });
     logger.debug(`Cache set for key: ${key}, TTL: ${ttl}ms`);
   }

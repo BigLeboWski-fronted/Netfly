@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const bcrypt = require("bcryptjs");
+const { randomBytes, randomInt, timingSafeEqual } = require("crypto");
 const cookieParser = require("cookie-parser");
 const path = require("path");
 const { Resend } = require("resend");
@@ -21,6 +22,45 @@ app.use(morgan("combined", {
 
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
+
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; " +
+    "script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; " +
+    "font-src 'self' data: https:; connect-src 'self' https:; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com"
+  );
+  if (process.env.NODE_ENV === "production") {
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  }
+  next();
+});
+
+const CSRF_COOKIE = "netfly_csrf";
+app.use((req, res, next) => {
+  let token = req.cookies[CSRF_COOKIE];
+  if (!token) {
+    token = randomBytes(32).toString("hex");
+    res.cookie(CSRF_COOKIE, token, {
+      httpOnly: false,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
+  }
+
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
+    const header = req.get("x-csrf-token");
+    const valid = header && token && header.length === token.length &&
+      timingSafeEqual(Buffer.from(header), Buffer.from(token));
+    if (!valid) return res.status(403).json({ error: "CSRF token required" });
+  }
+  next();
+});
 app.use(express.static(path.join(__dirname, "../public")));
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -32,6 +72,85 @@ const COOKIE_OPTS = {
   secure: process.env.NODE_ENV === "production",
   maxAge: 30 * 24 * 60 * 60 * 1000,
 };
+
+const CODE_MAX_ATTEMPTS = 5;
+const CODE_SEND_LIMIT = 5;
+const MAX_USER_DATA_BYTES = 1 * 1024 * 1024;
+const MAX_MOVIES = 1000;
+const MAX_EPISODE_CACHE_ENTRIES = 5000;
+const externalApiBuckets = new Map();
+
+function externalApiLimit(name, max = 60, windowMs = 60 * 1000) {
+  return (req, res, next) => {
+    const key = `${name}:${req.userId}:${req.ip}`;
+    const now = Date.now();
+    const bucket = externalApiBuckets.get(key);
+    if (!bucket || now >= bucket.resetAt) {
+      externalApiBuckets.set(key, { count: 1, resetAt: now + windowMs });
+      return next();
+    }
+    if (bucket.count >= max)
+      return res.status(429).json({ error: "Слишком много запросов к внешнему API" });
+    bucket.count += 1;
+    next();
+  };
+}
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, bucket] of externalApiBuckets) {
+    if (now >= bucket.resetAt) externalApiBuckets.delete(key);
+  }
+}, 5 * 60 * 1000).unref();
+
+async function canSendCode(email) {
+  const { rows } = await pool.query(
+    `SELECT COUNT(*)::int AS count
+       FROM verification_codes
+      WHERE email=$1 AND created_at > NOW() - INTERVAL '1 hour'`,
+    [email.toLowerCase()]
+  );
+  return rows[0].count < CODE_SEND_LIMIT;
+}
+
+async function consumeVerificationCode(email, code) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const { rows } = await client.query(
+      `UPDATE verification_codes
+          SET used=TRUE
+        WHERE email=$1 AND code=$2 AND used=FALSE
+          AND attempts < $3 AND expires_at > NOW()
+        RETURNING id`,
+      [email.toLowerCase(), code.trim(), CODE_MAX_ATTEMPTS]
+    );
+
+    if (!rows.length) {
+      await client.query(
+        `UPDATE verification_codes
+            SET attempts=attempts+1
+          WHERE id=(
+            SELECT id FROM verification_codes
+             WHERE email=$1 AND used=FALSE AND expires_at > NOW()
+             ORDER BY id DESC LIMIT 1
+          ) AND attempts < $2`,
+        [email.toLowerCase(), CODE_MAX_ATTEMPTS]
+      );
+    }
+    await client.query("COMMIT");
+    return rows.length > 0;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+function generateVerificationCode() {
+  return String(randomInt(100000, 1000000));
+}
 
 app.get("/health", (req, res) => res.json({ ok: true }));
 
@@ -49,6 +168,9 @@ app.post("/api/send-code", async (req, res) => {
     return res.status(400).json({ error: "Некорректный email" });
 
   try {
+    if (!(await canSendCode(email)))
+      return res.status(429).json({ error: "Слишком много запросов. Попробуй позже" });
+
     // Check duplicates
     const { rows } = await pool.query(
       "SELECT id FROM users WHERE email=$1 OR username=$2",
@@ -57,7 +179,7 @@ app.post("/api/send-code", async (req, res) => {
     if (rows.length) return res.status(409).json({ error: "Email или имя уже заняты" });
 
     // Generate 6-digit code
-    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const code = generateVerificationCode();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
 
     // Invalidate old codes for this email
@@ -88,18 +210,9 @@ app.post("/api/verify-code", async (req, res) => {
     return res.status(400).json({ error: "Заполни все поля" });
 
   try {
-    const { rows } = await pool.query(
-      `SELECT * FROM verification_codes
-       WHERE email=$1 AND code=$2 AND used=FALSE AND expires_at > NOW()
-       ORDER BY id DESC LIMIT 1`,
-      [email.toLowerCase(), code.trim()]
-    );
-
-    if (!rows.length)
+    if (!(await consumeVerificationCode(email, code))) {
       return res.status(400).json({ error: "Неверный или истёкший код" });
-
-    // Mark code as used
-    await pool.query("UPDATE verification_codes SET used=TRUE WHERE id=$1", [rows[0].id]);
+    }
 
     const hash = await bcrypt.hash(password, 10);
     const insert = await pool.query(
@@ -164,21 +277,37 @@ app.get("/api/data", requireAuth, async (req, res) => {
 });
 
 app.put("/api/data", requireAuth, async (req, res) => {
-  const { movies, profile, now_state, omdb_ep_cache } = req.body;
+  const { movies, profile, now_state, omdb_ep_cache } = req.body || {};
+  if (!Array.isArray(movies) || movies.length > MAX_MOVIES ||
+      !profile || typeof profile !== "object" || Array.isArray(profile) ||
+      !now_state || typeof now_state !== "object" || Array.isArray(now_state) ||
+      !omdb_ep_cache || typeof omdb_ep_cache !== "object" || Array.isArray(omdb_ep_cache)) {
+    return res.status(400).json({ error: "Некорректный формат данных" });
+  }
+
+  if (Object.keys(omdb_ep_cache).length > MAX_EPISODE_CACHE_ENTRIES) {
+    return res.status(413).json({ error: "Слишком большой кэш эпизодов" });
+  }
+
+  const snapshot = { movies, profile, now_state, omdb_ep_cache };
+  if (Buffer.byteLength(JSON.stringify(snapshot), "utf8") > MAX_USER_DATA_BYTES) {
+    return res.status(413).json({ error: "Слишком большой объём данных" });
+  }
+
   await pool.query(
     `INSERT INTO user_data (user_id, movies, profile, now_state, omdb_ep_cache, updated_at)
      VALUES ($1,$2,$3,$4,$5,NOW())
      ON CONFLICT (user_id) DO UPDATE SET
        movies=$2, profile=$3, now_state=$4, omdb_ep_cache=$5, updated_at=NOW()`,
-    [req.userId, JSON.stringify(movies??[]), JSON.stringify(profile??{}),
-     JSON.stringify(now_state??{}), JSON.stringify(omdb_ep_cache??{})]
+    [req.userId, JSON.stringify(movies), JSON.stringify(profile),
+     JSON.stringify(now_state), JSON.stringify(omdb_ep_cache)]
   );
   res.json({ ok: true });
 });
 
 // ── OMDB proxy ────────────────────────────────────────────────────────────────
 
-app.get("/api/omdb", requireAuth, async (req, res) => {
+app.get("/api/omdb", requireAuth, externalApiLimit("omdb"), async (req, res) => {
   try {
     const cacheKey = cache.generateKey('omdb:search', req.query);
     const cached = cache.get(cacheKey);
@@ -203,7 +332,7 @@ app.get("/api/omdb", requireAuth, async (req, res) => {
 
 // ── YouTube API proxy ─────────────────────────────────────────────────────────
 
-app.get("/api/youtube/search", requireAuth, async (req, res) => {
+app.get("/api/youtube/search", requireAuth, externalApiLimit("youtube"), async (req, res) => {
   const { q } = req.query;
   if (!q) return res.status(400).json({ error: "Query required" });
   
@@ -253,7 +382,7 @@ const TMDB_BASE = "https://api.themoviedb.org/3";
 const TMDB_KEY = process.env.TMDB_API_KEY;
 
 // Search movies/series
-app.get("/api/tmdb/search", requireAuth, async (req, res) => {
+app.get("/api/tmdb/search", requireAuth, externalApiLimit("tmdb"), async (req, res) => {
   const { query, page = 1 } = req.query;
   if (!query) return res.status(400).json({ error: "Query required" });
 
@@ -281,7 +410,7 @@ app.get("/api/tmdb/search", requireAuth, async (req, res) => {
 });
 
 // Discover with filters
-app.get("/api/tmdb/discover", requireAuth, async (req, res) => {
+app.get("/api/tmdb/discover", requireAuth, externalApiLimit("tmdb"), async (req, res) => {
   const { type = "movie", genre, year, sort = "popularity.desc", page = 1 } = req.query;
   
   try {
@@ -321,7 +450,7 @@ app.get("/api/tmdb/discover", requireAuth, async (req, res) => {
 });
 
 // Movie details (full data)
-app.get("/api/tmdb/movie/:id", requireAuth, async (req, res) => {
+app.get("/api/tmdb/movie/:id", requireAuth, externalApiLimit("tmdb"), async (req, res) => {
   const { id } = req.params;
   
   try {
@@ -354,7 +483,7 @@ app.get("/api/tmdb/movie/:id", requireAuth, async (req, res) => {
 });
 
 // TV series details (full data)
-app.get("/api/tmdb/tv/:id", requireAuth, async (req, res) => {
+app.get("/api/tmdb/tv/:id", requireAuth, externalApiLimit("tmdb"), async (req, res) => {
   const { id } = req.params;
   
   try {
@@ -387,7 +516,7 @@ app.get("/api/tmdb/tv/:id", requireAuth, async (req, res) => {
 });
 
 // Get genres list
-app.get("/api/tmdb/genres", requireAuth, async (req, res) => {
+app.get("/api/tmdb/genres", requireAuth, externalApiLimit("tmdb"), async (req, res) => {
   const { type = "movie" } = req.query;
   
   try {
@@ -415,7 +544,7 @@ app.get("/api/tmdb/genres", requireAuth, async (req, res) => {
 });
 
 // Pick a random TMDB title using search/discover filters.
-app.get("/api/tmdb/random", requireAuth, async (req, res) => {
+app.get("/api/tmdb/random", requireAuth, externalApiLimit("tmdb", 20), async (req, res) => {
   const { type = "movie", genre, year, sort = "popularity.desc", director, actor } = req.query;
   try {
     const endpoint = type === "tv" ? "discover/tv" : "discover/movie";
@@ -446,7 +575,7 @@ app.get("/api/tmdb/random", requireAuth, async (req, res) => {
   }
 });
 
-app.get('/api/tmdb/calendar', requireAuth, async (req, res) => {
+app.get('/api/tmdb/calendar', requireAuth, externalApiLimit("tmdb"), async (req, res) => {
   try {
     const { imdb, id } = req.query;
     if(!id && !/^tt\d+$/.test(String(imdb || ''))) return res.status(400).json({ error:'Не удалось определить сериал' });
@@ -471,7 +600,7 @@ app.get('/api/tmdb/calendar', requireAuth, async (req, res) => {
   } catch(e){ res.status(502).json({ error:e.message }); }
 });
 
-app.get('/api/tmdb/person/:id', requireAuth, async (req, res) => {
+app.get('/api/tmdb/person/:id', requireAuth, externalApiLimit("tmdb"), async (req, res) => {
   try{
     if(!/^\d+$/.test(req.params.id)) return res.status(400).json({error:'Некорректный ID'});
     const key = `person:${req.params.id}`;
@@ -486,7 +615,7 @@ app.get('/api/tmdb/person/:id', requireAuth, async (req, res) => {
 });
 
 // TMDB image proxy (to avoid CORS/403 issues)
-app.get("/api/tmdb/image/*", requireAuth, async (req, res) => {
+app.get("/api/tmdb/image/*", requireAuth, externalApiLimit("tmdb-image", 120), async (req, res) => {
   const imagePath = req.params[0];
   if (!imagePath) return res.status(400).send("Bad request");
   
@@ -514,11 +643,14 @@ app.post("/api/forgot-password", async (req, res) => {
   if (!email) return res.status(400).json({ error: "Введи email" });
 
   try {
+    if (!(await canSendCode(email)))
+      return res.status(429).json({ error: "Слишком много запросов. Попробуй позже" });
+
     const { rows } = await pool.query("SELECT id FROM users WHERE email=$1", [email.toLowerCase()]);
     // Always respond OK to avoid email enumeration
     if (!rows.length) return res.json({ ok: true });
 
-    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const code = generateVerificationCode();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     await pool.query("UPDATE verification_codes SET used=TRUE WHERE email=$1", [email.toLowerCase()]);
@@ -547,15 +679,9 @@ app.post("/api/reset-password", async (req, res) => {
   if (password.length < 6) return res.status(400).json({ error: "Пароль минимум 6 символов" });
 
   try {
-    const { rows } = await pool.query(
-      `SELECT * FROM verification_codes
-       WHERE email=$1 AND code=$2 AND used=FALSE AND expires_at > NOW()
-       ORDER BY id DESC LIMIT 1`,
-      [email.toLowerCase(), code.trim()]
-    );
-    if (!rows.length) return res.status(400).json({ error: "Неверный или истёкший код" });
-
-    await pool.query("UPDATE verification_codes SET used=TRUE WHERE id=$1", [rows[0].id]);
+    if (!(await consumeVerificationCode(email, code))) {
+      return res.status(400).json({ error: "Неверный или истёкший код" });
+    }
 
     const hash = await bcrypt.hash(password, 10);
     await pool.query("UPDATE users SET password_hash=$1 WHERE email=$2", [hash, email.toLowerCase()]);
@@ -608,10 +734,12 @@ app.post("/api/account/change-email/send-code", requireAuth, async (req, res) =>
       "SELECT email, email_changed_at FROM users WHERE id=$1", [req.userId]
     );
     const user = rows[0];
+    if (!(await canSendCode(user.email)))
+      return res.status(429).json({ error: "Слишком много запросов. Попробуй позже" });
     const err = cooldownError(user?.email_changed_at);
     if (err) return res.status(429).json({ error: err });
 
-    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const code = generateVerificationCode();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     await pool.query("UPDATE verification_codes SET used=TRUE WHERE email=$1", [user.email]);
@@ -647,15 +775,9 @@ app.post("/api/account/change-email", requireAuth, async (req, res) => {
     );
     const currentEmail = userRows[0]?.email;
 
-    const { rows } = await pool.query(
-      `SELECT * FROM verification_codes
-       WHERE email=$1 AND code=$2 AND used=FALSE AND expires_at > NOW()
-       ORDER BY id DESC LIMIT 1`,
-      [currentEmail, code.trim()]
-    );
-    if (!rows.length) return res.status(400).json({ error: "Неверный или истёкший код" });
-
-    await pool.query("UPDATE verification_codes SET used=TRUE WHERE id=$1", [rows[0].id]);
+    if (!(await consumeVerificationCode(currentEmail, code))) {
+      return res.status(400).json({ error: "Неверный или истёкший код" });
+    }
     await pool.query(
       "UPDATE users SET email=$1, email_changed_at=NOW() WHERE id=$2",
       [newEmail.toLowerCase(), req.userId]
@@ -687,14 +809,9 @@ app.post("/api/account/change-password", requireAuth, async (req, res) => {
       const ok = await bcrypt.compare(currentPassword, user.password_hash);
       if (!ok) return res.status(401).json({ error: "Неверный текущий пароль" });
     } else {
-      const { rows: codeRows } = await pool.query(
-        `SELECT * FROM verification_codes
-         WHERE email=$1 AND code=$2 AND used=FALSE AND expires_at > NOW()
-         ORDER BY id DESC LIMIT 1`,
-        [user.email, code.trim()]
-      );
-      if (!codeRows.length) return res.status(400).json({ error: "Неверный или истёкший код" });
-      await pool.query("UPDATE verification_codes SET used=TRUE WHERE id=$1", [codeRows[0].id]);
+      if (!(await consumeVerificationCode(user.email, code))) {
+        return res.status(400).json({ error: "Неверный или истёкший код" });
+      }
     }
 
     const hash = await bcrypt.hash(newPassword, 10);
@@ -714,8 +831,10 @@ app.post("/api/account/send-password-code", requireAuth, async (req, res) => {
   try {
     const { rows } = await pool.query("SELECT email FROM users WHERE id=$1", [req.userId]);
     const email = rows[0]?.email;
+    if (!(await canSendCode(email)))
+      return res.status(429).json({ error: "Слишком много запросов. Попробуй позже" });
 
-    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const code = generateVerificationCode();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     await pool.query("UPDATE verification_codes SET used=TRUE WHERE email=$1", [email]);

@@ -5,7 +5,8 @@ const pool = new Pool({
   max: 3,
   connectionTimeoutMillis: 15000,
   idleTimeoutMillis: 10000,
-  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
+  // Verify the database certificate in production to prevent MITM connections.
+  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: true } : false,
 });
 
 async function migrate() {
@@ -24,7 +25,9 @@ async function migrate() {
       email TEXT NOT NULL,
       code TEXT NOT NULL,
       expires_at TIMESTAMPTZ NOT NULL,
-      used BOOLEAN NOT NULL DEFAULT FALSE
+      used BOOLEAN NOT NULL DEFAULT FALSE,
+      attempts INTEGER NOT NULL DEFAULT 0,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
     CREATE TABLE IF NOT EXISTS user_data (
@@ -48,6 +51,15 @@ async function migrate() {
   // Indexes
   await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_verification_codes_email ON verification_codes(email);
+  `);
+
+  // Brute-force protection for existing installations.
+  await pool.query(`
+    ALTER TABLE verification_codes ADD COLUMN IF NOT EXISTS attempts INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE verification_codes ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+  `);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_verification_codes_created_at ON verification_codes(created_at);
   `);
 
   // Safe migrations for existing tables
