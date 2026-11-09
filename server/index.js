@@ -79,6 +79,25 @@ const MAX_USER_DATA_BYTES = 1 * 1024 * 1024;
 const MAX_MOVIES = 1000;
 const MAX_EPISODE_CACHE_ENTRIES = 5000;
 const externalApiBuckets = new Map();
+const authBuckets = new Map();
+
+function authRateLimit(name, max, windowMs) {
+  return (req, res, next) => {
+    const identifier = String(req.body?.email || req.body?.username || "").trim().toLowerCase();
+    const key = `${name}:${req.ip}:${identifier}`;
+    const now = Date.now();
+    const bucket = authBuckets.get(key);
+    if (!bucket || now >= bucket.resetAt) {
+      authBuckets.set(key, { count: 1, resetAt: now + windowMs });
+      return next();
+    }
+    if (bucket.count >= max) {
+      return res.status(429).json({ error: "Слишком много попыток. Попробуй позже" });
+    }
+    bucket.count += 1;
+    next();
+  };
+}
 
 function externalApiLimit(name, max = 60, windowMs = 60 * 1000) {
   return (req, res, next) => {
@@ -100,6 +119,13 @@ setInterval(() => {
   const now = Date.now();
   for (const [key, bucket] of externalApiBuckets) {
     if (now >= bucket.resetAt) externalApiBuckets.delete(key);
+  }
+}, 5 * 60 * 1000).unref();
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, bucket] of authBuckets) {
+    if (now >= bucket.resetAt) authBuckets.delete(key);
   }
 }, 5 * 60 * 1000).unref();
 
@@ -160,8 +186,8 @@ app.post("/api/send-code", async (req, res) => {
   const { email, username, password } = req.body;
   if (!email || !username || !password)
     return res.status(400).json({ error: "Заполни все поля" });
-  if (username.length < 3)
-    return res.status(400).json({ error: "Имя минимум 3 символа" });
+  if (!/^[\p{L}\p{N}_-]{3,32}$/u.test(username.trim()))
+    return res.status(400).json({ error: "Имя: 3–32 символа, только буквы, цифры, _ и -" });
   if (password.length < 6)
     return res.status(400).json({ error: "Пароль минимум 6 символов" });
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
@@ -234,7 +260,7 @@ app.post("/api/verify-code", async (req, res) => {
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
-app.post("/api/login", async (req, res) => {
+app.post("/api/login", authRateLimit("login", 10, 15 * 60 * 1000), async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: "Заполни все поля" });
 
@@ -638,7 +664,7 @@ app.get("/api/tmdb/image/*", requireAuth, externalApiLimit("tmdb-image", 120), a
 
 // ── Password reset ────────────────────────────────────────────────────────────
 
-app.post("/api/forgot-password", async (req, res) => {
+app.post("/api/forgot-password", authRateLimit("forgot-password", 5, 15 * 60 * 1000), async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: "Введи email" });
 
@@ -673,7 +699,7 @@ app.post("/api/forgot-password", async (req, res) => {
   }
 });
 
-app.post("/api/reset-password", async (req, res) => {
+app.post("/api/reset-password", authRateLimit("reset-password", 10, 15 * 60 * 1000), async (req, res) => {
   const { email, code, password } = req.body;
   if (!email || !code || !password) return res.status(400).json({ error: "Заполни все поля" });
   if (password.length < 6) return res.status(400).json({ error: "Пароль минимум 6 символов" });
@@ -705,8 +731,8 @@ function cooldownError(changedAt) {
 
 app.post("/api/account/change-username", requireAuth, async (req, res) => {
   const { username } = req.body;
-  if (!username || username.trim().length < 3)
-    return res.status(400).json({ error: "Имя минимум 3 символа" });
+  if (!username || !/^[\p{L}\p{N}_-]{3,32}$/u.test(username.trim()))
+    return res.status(400).json({ error: "Имя: 3–32 символа, только буквы, цифры, _ и -" });
 
   try {
     const { rows } = await pool.query(
